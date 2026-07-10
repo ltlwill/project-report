@@ -1,0 +1,222 @@
+.approval-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* 可滚动内容区 */
+.approval-scroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 12px;
+}
+
+/* 底部一键审批按钮区 */
+.batch-approve-bar {
+  flex-shrink: 0;
+  padding: 10px 4px 4px;
+  background: #f7f8fa;
+  /* border-top: 1px solid #eee; */
+  border-top: none;
+}
+
+.approval-search {
+  margin: 0 -12px 0;
+}
+
+/* 状态筛选Tab */
+.status-filter-bar {
+  display: flex;
+  gap: 8px;
+  padding: 10px 0 12px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.filter-tab {
+  flex-shrink: 0;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #666;
+  background: #f5f5f5;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.filter-tab.active {
+  background: #1989fa;
+  color: #fff;
+}
+
+.approval-loading {
+  display: flex;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.approval-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 卡片样式与记录页完全一致 */
+.approval-card {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.approval-card-main {
+  padding: 14px;
+  /* 去掉整体主体区 cursor，只有 footer 可点 */
+}
+
+.approval-card-main:active {
+  /* 去掉按下态 */
+}
+
+/* 复用记录页相同的内部结构类名 */
+.approval-card .record-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.approval-card .record-user {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.approval-card .record-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+}
+
+.approval-card .record-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+  position: relative; /** add */
+}
+
+.approval-card .record-info-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.approval-card .info-icon {
+  color: #969799;
+  display: flex;
+  align-items: center;
+}
+
+.approval-card .info-text {
+  font-size: 13px;
+  color: #666;
+}
+
+.approval-card .record-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid #f5f5f5;
+  cursor: pointer;
+}
+
+.approval-card .record-footer:active {
+  opacity: 0.7;
+}
+
+.approval-card .record-hint {
+  font-size: 12px;
+  color: #969799;
+}
+
+/* 审批操作区 */
+.approval-actions {
+  display: flex;
+  justify-content: flex-end;
+  /* padding: 10px 14px 12px; */
+  padding: 5px 10px;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+/* 审批弹窗 */
+.approval-dialog-content {
+  padding: 16px 4px 4px;
+}
+
+/* 一键审批提示文字 */
+.batch-tip {
+  padding: 0 16px 14px;
+  font-size: 13px;
+  color: #666;
+  line-height: 1.6;
+}
+
+.approval-result-row {
+  display: flex;
+  align-items: center;
+  padding: 0 16px 14px;
+  gap: 12px;
+}
+
+.approval-result-label {
+  font-size: 14px;
+  color: #333;
+  white-space: nowrap;
+}
+
+.approval-result-options {
+  display: flex;
+  gap: 10px;
+  flex: 1;
+}
+
+.result-option {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  justify-content: center;
+  padding: 6px 0;
+  border-radius: 6px;
+  border: 1px solid #dcdfe6;
+  font-size: 14px;
+  color: #606266;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.result-option.selected {
+  border-color: #1989fa;
+  color: #1989fa;
+  background: #ecf5ff;
+}
+
+.result-option.danger.selected {
+  border-color: #ee0a24;
+  color: #ee0a24;
+  background: #fff1f1;
+}
+
+.approval-card .record-body .van-button{
+    display: inline-block;
+    width: fit-content;
+    bottom: 0;
+    right: 0;
+    position: absolute;
+}

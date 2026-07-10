@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/> -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>项目工时申报</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <!-- 钉钉 JSAPI -->
+    <!-- <script src="https://g.alicdn.com/dingding/dingtalk-jsapi/3.0.35/dingtalk.open.js"></script> -->
+    <!-- 企业微信 JS-SDK -->
+    <!-- <script src="https://res.wx.qq.com/open/js/jweixin-1.6.0.js"></script> -->
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+    <script>
+    //   // 检测钉钉/企业微信 webview 环境
+    //   (function() {
+    //     var ua = navigator.userAgent.toLowerCase()
+    //     var isDingTalk = ua.indexOf('dingtalk') !== -1
+    //     var isWeCom = ua.indexOf('wxwork') !== -1
+
+    //     if (isDingTalk || isWeCom) {
+    //       document.documentElement.classList.add('is-webview')
+    //     }
+
+    //     // 动态设置真实可见视口高度 CSS 变量 --vh
+    //     // 解决 webview 布局视口延伸到被底部导航栏遮挡区域的问题
+    //     function setVH() {
+    //       var vh = window.visualViewport ? window.visualViewport.height : window.innerHeight
+    //       document.documentElement.style.setProperty('--vh', vh + 'px')
+    //     }
+    //     setVH()
+    //     if (window.visualViewport) {
+    //       window.visualViewport.addEventListener('resize', setVH)
+    //       window.visualViewport.addEventListener('scroll', setVH)
+    //     } else {
+    //       window.addEventListener('resize', setVH)
+    //     }
+
+    //     // 钉钉：尝试隐藏导航栏（部分环境可用）
+    //     if (isDingTalk && window.dd) {
+    //       dd.ready(function() {
+    //         dd.biz.navigation.hide({
+    //           onSuccess: function() { console.log('[钉钉] 导航栏已隐藏') },
+    //           onFail: function() {}
+    //         })
+    //       })
+    //     }
+
+    //     // 企业微信：尝试隐藏菜单（部分环境可用）
+    //     if (isWeCom && window.wx) {
+    //       wx.ready(function() {
+    //         wx.invoke('hideOptionMenu', {}, function() {})
+    //       })
+    //     }
+    //   })()
+    // </script>
+  </body>
+</html>

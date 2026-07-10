@@ -1,0 +1,117 @@
+.records-page {
+  padding-bottom: 12px;
+}
+
+.records-search {
+  margin: 0 -12px 0;
+}
+
+/* 状态筛选Tab */
+.status-filter-bar {
+  display: flex;
+  gap: 8px;
+  padding: 10px 0 12px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.filter-tab {
+  flex-shrink: 0;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #666;
+  background: #f5f5f5;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.filter-tab.active {
+  background: #1989fa;
+  color: #fff;
+}
+
+.records-loading {
+  display: flex;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.records-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.record-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.record-card:active {
+  /* 去掉整体卡片按下态 */
+}
+
+.record-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.record-user {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.record-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+}
+
+.record-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.record-info-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.info-icon {
+  color: #969799;
+  display: flex;
+  align-items: center;
+}
+
+.info-text {
+  font-size: 13px;
+  color: #666;
+}
+
+.record-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid #f5f5f5;
+  cursor: pointer;
+}
+
+.record-footer:active {
+  opacity: 0.7;
+}
+
+.record-hint {
+  font-size: 12px;
+  color: #969799;
+}

@@ -1,0 +1,94 @@
+[
+  {
+    "path": "/login",
+    "name": "Login",
+    "component": "views/login/LoginView",
+    "meta": {
+      "title": "登录",
+      "requiresAuth": false,
+      "tab": false,
+      "hideNav": true
+    }
+  },
+  {
+    "path": "/",
+    "name": "Home",
+    "component": "views/home/HomeView",
+    "meta": {
+      "title": "首页",
+      "requiresAuth": true,
+      "tab": true,
+      "tabIndex": 0,
+      "icon": "home-o",
+      "activeIcon": "home-o",
+      "keepAlive": true
+    }
+  },
+  {
+    "path": "/timesheet",
+    "name": "Timesheet",
+    "component": "views/timesheet/TimesheetView",
+    "meta": {
+      "title": "填报",
+      "requiresAuth": true,
+      "tab": true,
+      "tabIndex": 1,
+      "icon": "edit",
+      "activeIcon": "edit",
+      "keepAlive": true
+    }
+  },
+  {
+    "path": "/records",
+    "name": "Records",
+    "component": "views/records/RecordsView",
+    "meta": {
+      "title": "记录",
+      "requiresAuth": true,
+      "tab": true,
+      "tabIndex": 2,
+      "icon": "notes-o",
+      "activeIcon": "notes-o",
+      "keepAlive": true
+    }
+  },
+  {
+    "path": "/approval",
+    "name": "Approval",
+    "component": "views/approval/ApprovalView",
+    "meta": {
+      "title": "审批",
+      "requiresAuth": true,
+      "requireApprover": true,
+      "tab": true,
+      "tabIndex": 3,
+      "icon": "shield-o",
+      "activeIcon": "shield-o",
+      "keepAlive": true
+    }
+  },
+  {
+    "path": "/mine",
+    "name": "Mine",
+    "component": "views/mine/MineView",
+    "meta": {
+      "title": "我的",
+      "requiresAuth": true,
+      "tab": true,
+      "tabIndex": 4,
+      "icon": "user-o",
+      "activeIcon": "user-o"
+    }
+  },
+  {
+    "path": "/record-detail/:id",
+    "name": "RecordDetail",
+    "component": "views/record-detail/RecordDetailView",
+    "meta": {
+      "title": "填报详情",
+      "requiresAuth": true,
+      "tab": false,
+      "hideNav": false
+    }
+  }
+]
