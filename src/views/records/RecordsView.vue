@@ -49,10 +49,10 @@
           </div>
 
           <div class="record-body">
-            <div class="record-info-row">
+            <!-- <div class="record-info-row">
               <span class="info-icon"><van-icon name="flag-o" size="14" /></span>
               <span class="info-text">岗&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;位：{{ item.positionName }}</span>
-            </div>
+            </div> -->
             <div class="record-info-row">
               <span class="info-icon"><van-icon name="calendar-o" size="14" /></span>
               <span class="info-text">汇报日期：{{ item.reportDate }}</span>
@@ -69,6 +69,16 @@
               <span class="info-icon"><van-icon name="orders-o" size="14" /></span>
               <span class="info-text">项&nbsp;&nbsp;目&nbsp;&nbsp;数：{{ item.totalCount }}</span>
             </div>
+            <van-button
+              v-if="item.approvalStatus === 0"
+              :class="operate-button"
+              icon="revoke"
+              size="small"
+              type="warning"
+              @click.stop="cancelReport(item)"
+            >
+              取消
+            </van-button>
           </div>
 
           <div class="record-footer" @click="goDetail(item.id)">

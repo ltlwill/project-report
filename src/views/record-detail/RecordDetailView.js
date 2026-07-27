@@ -1,6 +1,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { showToast } from 'vant'
+import { showToast, showConfirmDialog } from 'vant'
 import { get, post } from '@/utils/request.js'
 import { showTip } from '@/utils/tip'
 import { formatToDateTime } from '@/utils/dateUtil.js'
@@ -28,6 +28,7 @@ export function useRecordDetail() {
 
   // 当前记录是否未审批
   const isPending = computed(() => detail.value.approvalStatus === 0 && fromPage === 'approval-list')
+  const isUnapproved = computed(() => detail.value.approvalStatus === 0 && fromPage === 'submit-list')
 
   function openApproval() {
     approvalStatus.value = 1
@@ -66,13 +67,47 @@ export function useRecordDetail() {
     }
   }
 
+  async function cancelReport() {
+    showConfirmDialog({
+      title: '提示',
+      message:
+        '确定要取消此填报吗？',
+    })
+    .then(async () => {
+      try {
+        const url = `/h5-open-api/erp/h5/cancel`
+        const res = await post(url, [detail.value.id])
+        if(res && res.code === 0 && res.data){
+          detail.value.approvalStatus = 3
+          // 通知审批列表页更新对应记录的状态
+          approvalUpdate.value = {
+            id: detail.value.id,
+            status: 3,
+            timestamp: Date.now()
+          }
+          return true
+        }else{
+          showTip(res.msg || '取消填报失败')
+          return false
+        }
+      } catch (e) {
+        console.error('取消填报记录失败:', e)
+        showTip(e.message || '取消填报失败')
+      } finally {
+      }
+    })
+    .catch(() => {
+      // on cancel
+    });
+  }
+  
   function getStatusType(status) {
     const map = { 0: 'warning', 1: 'success', 2: 'danger' }
     return map[status] || 'default'
   }
 
   function getStatusText(status) {
-    const map = { 0: '未审批', 1: '通过', 2: '不通过' }
+    const map = { 0: '未审批', 1: '已通过', 2: '不通过', 3: '已取消' }
     return map[status] || '未知'
   }
 
@@ -104,6 +139,7 @@ export function useRecordDetail() {
     detail,
     projectDetails,
     isPending,
+    isUnapproved,
     showApprovalDialog,
     approvalStatus,
     approvalComment,
@@ -112,6 +148,7 @@ export function useRecordDetail() {
     goBack,
     openApproval,
     onApprovalConfirm,
+    cancelReport,
     formatToDateTime
   }
 }

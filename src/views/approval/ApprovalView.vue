@@ -1,7 +1,7 @@
 <template>
-  <div class="approval-page">
+  <div class="approval-page" ref="scrollRef">
     <!-- 可滚动区域 -->
-    <div class="approval-scroll" ref="scrollRef">
+    <!-- <div class="approval-scroll" ref="scrollRef"> -->
       <!-- 搜索栏 -->
       <van-search
         v-model="keyword"
@@ -53,10 +53,10 @@
               </div>
 
               <div class="record-body">
-                <div class="record-info-row">
+                <!-- <div class="record-info-row">
                   <span class="info-icon"><van-icon name="flag-o" size="14" /></span>
                   <span class="info-text">岗&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;位：{{ item.positionName }}</span>
-            </div>
+                </div> -->
                 <div class="record-info-row">
                   <span class="info-icon"><van-icon name="calendar-o" size="14" /></span>
                   <span class="info-text">汇报日期：{{ item.reportDate }}</span>
@@ -74,16 +74,16 @@
                   <span class="info-text">项&nbsp;&nbsp;目&nbsp;&nbsp;数：{{ item.totalCount }}</span>
                 </div>
 
-                  <van-button
-                    v-if="item.approvalStatus === 0"
-                    :class="approval-button"
-                    icon="edit"
-                    size="small"
-                    type="primary"
-                    @click.stop="openApproval(item)"
-                  >
-                    审批
-                  </van-button>
+                <van-button
+                  v-if="item.approvalStatus === 0"
+                  :class="operate-button"
+                  icon="edit"
+                  size="small"
+                  type="primary"
+                  @click.stop="openApproval(item)"
+                >
+                  审批
+                </van-button>
               </div>
 
               <div class="record-footer" @click="goDetail(item.id)">
@@ -105,7 +105,7 @@
           </div>
         </div>
       </van-pull-refresh>
-    </div>
+    <!-- </div> -->
 
     <!-- 底部一键审批按钮：仅在「未审批」 Tab 且有记录时显示 -->
     <div v-if="statusFilter === 0 && pendingCount > 0" class="batch-approve-bar">

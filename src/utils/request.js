@@ -27,7 +27,7 @@ function handleUnauthorized() {
     // 避免循环跳转，已在登录页时不跳
     if (window.location.hash !== '#/login' && window.location.pathname !== '/login') {
       window.location.hash = ''
-      window.location.href = '/#/login'
+      window.location.href = window.location.href.split('#')[0] + '#/login'
     }
   })
   .catch(() => {})

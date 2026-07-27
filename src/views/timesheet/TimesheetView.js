@@ -1,4 +1,4 @@
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onActivated } from 'vue'
 import { showToast, showConfirmDialog } from 'vant'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/modules/user.js'
@@ -19,6 +19,8 @@ export function useTimesheet() {
   const hasLeaveInfo = ref(false)
   const currOriginLeaveDay = ref(0)
   const leaveType = ref('')
+  const unSubmitDates = ref([])
+  const unSubmitDatesMessage = ref('')
 
   // 日期相关
   const now = new Date()
@@ -101,6 +103,23 @@ export function useTimesheet() {
     }
   } 
 
+  async function loadUnSubmitReportDates() {
+    try {
+      const url = `/h5-open-api/erp/h5/get-unsubmit-dates?empId=${empId.value}`
+      const res = await get(url)
+      if(res.data){
+        unSubmitDates.value = res.data || []
+        unSubmitDatesMessage.value = `你最近有 ${unSubmitDates.value.length} 天工时未填报，分别是 ${unSubmitDates.value.join(',')}，如已填报请忽略！`
+      }else{
+        unSubmitDates.value = []
+        unSubmitDatesMessage.value = ''
+      }
+    } catch (e) {
+      console.error('加载未填写报告日期数据失败:', e)
+    } finally {
+    }
+  } 
+
   function onPositionConfirm({ selectedOptions }) {
     selectedPosition.value = selectedOptions[0]?.text || ''
     selectedPositionValue.value = selectedOptions[0]?.value || ''
@@ -124,6 +143,28 @@ export function useTimesheet() {
     timesheetStore.setProjectCompleted(projectId, val)
   }
 
+    // 格式化当前日期
+  function formatDateWithWeekDay(date) {
+    if (!date) {
+      return ''
+    }
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    const weekdays = ['日', '一', '二', '三', '四', '五', '六']
+    return `${y}-${m}-${d} 星期${weekdays[date.getDay()]}`
+  }
+
+  function formatDate(date) {
+    if (!date) {
+      return ''
+    }
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+
   async function onSubmit() {
     // 校验
     if (!reportDate.value) {
@@ -131,11 +172,11 @@ export function useTimesheet() {
       showTip('请选择汇报日期')
       return
     }
-    if (!selectedPosition.value) {
-      // showToast('请选择岗位')
-      showTip('请选择岗位')
-      return
-    }
+    // if (!selectedPosition.value) {
+    //   // showToast('请选择岗位')
+    //   showTip('请选择岗位')
+    //   return
+    // }
     if (projectList.value.length === 0) {
       // showToast('请至少选择一个项目')
       showTip('请至少选择一个项目')
@@ -150,19 +191,40 @@ export function useTimesheet() {
       showTip(`总工时不能超过${workHours.value}小时`)  
       return
     }
-    // if(totalHours.value !== 8){
-    //   showTip('总工时不等于8小时')  
-    //   return
-    // }
+    if(totalHours.value !== workHours.value){
+      showTip(`总工时不等于${workHours.value}小时`)  
+      return
+    }
     if(projectList.value.some(p => p.hours <= 0)){
       showTip(`项目工时必须大于0`)
       return
     }
-
+    const now = new Date()
+    const today = formatDate(now)
+    const yesterday = formatDate(new Date(now.setDate(now.getDate() - 1)))
+    if(reportDate.value === today && now.getHours() < 12){
+      showTip('12点前不能提交当天的填报')
+      return
+    }else if(reportDate.value === yesterday && now.getHours() >= 10){
+      showTip('10点后不能提交昨天的填报')
+      return
+    }else if(reportDate.value > today){
+      showTip('不能提交将来的填报')
+      return
+    }else if(reportDate.value < yesterday){
+      // showTip('不能提交昨天之前的填报')
+      // return
+    }
+    const arr = reportDate.value.split('-')
+    const formattedDate = formatDateWithWeekDay(new Date(arr[0], arr[1] - 1, arr[2]))
+    let message = `确认提交 <span style="font-weight: bold;color: #ee0a24;">${formattedDate}</span> 的工时填报？\n` 
+    message += `共 <span style="font-weight: bold;color: #ee0a24;">${projectCount.value}</span> 个项目，`
+    message += `总工时 <span style="font-weight: bold;color: #ee0a24;">${totalHours.value.toFixed(1)}h</span>`
     try {
       await showConfirmDialog({
         title: '确认提交',
-        message: `确认提交 ${reportDate.value} 的工时填报？\n共 ${projectCount.value} 个项目，总工时 ${totalHours.value.toFixed(1)}h`
+        allowHtml: true,
+        message: message
       })
     } catch {
       return
@@ -173,8 +235,8 @@ export function useTimesheet() {
       const submitData = {
         empId: empId.value,
         empName: empName.value,
-        positionNo: selectedPositionValue.value,
-        positionName: selectedPosition.value,
+        // positionNo: selectedPositionValue.value,
+        // positionName: selectedPosition.value,
         reportDate: reportDate.value,
         totalWorkHours: totalHours.value,
         totalCount: projectList.value.length,
@@ -194,6 +256,7 @@ export function useTimesheet() {
       // showToast({ message: '提交成功', type: 'success' })
       showTip('提交成功')
       timesheetStore.reset()
+      loadUnSubmitReportDates()
       // 保留岗位选择，下次填报无需重新选择
       // router.push('/records')
     } catch (error) {
@@ -208,13 +271,17 @@ export function useTimesheet() {
     loadCurrentDateLeaveInfo(reportDate.value)
   })
 
+  onActivated(() => {
+    loadUnSubmitReportDates()
+  })
+
   return {
     empId, empName, workHours, hasLeaveInfo, currOriginLeaveDay,leaveType,
     reportDate, showDatePicker, dateValue, minDate, maxDate,
     selectedPosition, showPositionPicker, positionColumns,
     showProjectSelector, projectList, projectCount, totalHours,
-    submitting,
-    onDateConfirm, onPositionConfirm,
-    onRemoveProject, onHoursChange, onCompletedChange, onSubmit
+    submitting, onDateConfirm, onPositionConfirm,
+    onRemoveProject, onHoursChange, onCompletedChange, onSubmit, 
+    unSubmitDates, unSubmitDatesMessage
   }
 }

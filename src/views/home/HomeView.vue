@@ -11,24 +11,35 @@
       <van-row :gutter="10">
         <van-col :span="8">
           <div class="stat-card stat-card-blue">
-            <div class="stat-value">{{ stats.projectCount }}</div>
+            <div class="stat-value">{{ statisticsData?.summaryData?.totalCount || 0}}</div>
             <div class="stat-label">项目总数</div>
           </div>
         </van-col>
         <van-col :span="8">
           <div class="stat-card stat-card-green">
-            <div class="stat-value">{{ stats.weekHours }}</div>
+            <div class="stat-value">{{ statisticsData?.summaryData?.weekHours || 0}}</div>
             <div class="stat-label">本周工时</div>
           </div>
         </van-col>
         <van-col :span="8">
           <div class="stat-card stat-card-orange">
-            <div class="stat-value">{{ stats.monthHours }}</div>
+            <div class="stat-value">{{ statisticsData?.summaryData?.monthHours || 0}}</div>
             <div class="stat-label">本月工时</div>
           </div>
         </van-col>
       </van-row>
     </div>
+    <!-- <div class="canlendar-section">
+      <van-calendar
+        title="日历"
+        first-day-of-week="1"
+        :show-title="false"
+        :show-subtitle="false"
+        :poppable="false"
+        :show-confirm="false"
+        :style="{ height: '420px' }"
+      />
+    </div> -->
 
     <!-- 工时趋势图表 -->
     <div class="home-chart-section">

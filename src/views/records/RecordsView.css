@@ -79,6 +79,7 @@
   flex-direction: column;
   gap: 8px;
   margin-bottom: 12px;
+  position: relative;
 }
 
 .record-info-row {
@@ -114,4 +115,12 @@
 .record-hint {
   font-size: 12px;
   color: #969799;
+}
+
+.record-card .record-body .van-button{
+    display: inline-block;
+    width: fit-content;
+    bottom: 0;
+    right: 0;
+    position: absolute;
 }

@@ -26,7 +26,7 @@
         <van-cell title="汇报日期" is-link :value="reportDate" @click="showDatePicker = true" />
 
         <!-- 岗位选择 -->
-        <van-cell title="选择岗位" is-link :value="selectedPosition" @click="showPositionPicker = true" />
+        <!-- <van-cell title="选择岗位" is-link :value="selectedPosition" @click="showPositionPicker = true" /> -->
 
         <!-- 项目统计 -->
         <div class="project-summary">
@@ -39,6 +39,13 @@
             <span class="summary-value">{{ totalHours.toFixed(1) }}h</span>
           </div>
         </div>
+
+        <van-notice-bar
+          v-if="unSubmitDates.length > 0"
+          left-icon="volume-o"
+          scrollable
+          :text="unSubmitDatesMessage"
+        />
 
         <!-- 今日工作项目列表 -->
         <div class="project-list-section">
@@ -108,7 +115,7 @@
         type="primary"
         block
         round
-        :disabled="workHours <= 0"
+        :disabled="workHours <= 0 || projectList.length <= 0"
         :loading="submitting"
         loading-text="提交中..."
         @click="onSubmit"

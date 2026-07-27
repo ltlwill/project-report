@@ -1,7 +1,10 @@
-import { ref, computed, onMounted, onActivated } from 'vue'
+import { ref, computed, onMounted, onActivated, watch } from 'vue'
 import { useRouter, onBeforeRouteLeave } from 'vue-router'
-import { get } from '@/utils/request.js'
+import { get, post } from '@/utils/request.js'
 import { formatToDateTime } from '@/utils/dateUtil.js'
+import { showConfirmDialog } from 'vant'
+import { showTip } from '@/utils/tip'
+import { approvalUpdate } from '@/shared/approvalUpdate.js'
 
 export const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false'
 
@@ -35,8 +38,9 @@ export function useRecords() {
   const statusTabs = [
     { label: '全部', value: null },
     { label: '未审批', value: 0 },
-    { label: '通过', value: 1 },
-    { label: '不通过', value: 2 }
+    { label: '已通过', value: 1 },
+    { label: '不通过', value: 2 },
+    { label: '已取消', value: 3 }
   ]
 
   // 过滤后的列表
@@ -51,7 +55,7 @@ export function useRecords() {
   }
 
   function getStatusText(status) {
-    const map = { 0: '未审批', 1: '通过', 2: '不通过' }
+    const map = { 0: '未审批', 1: '已通过', 2: '不通过',3: '已取消' }
     return map[status] ?? '未知'
   }
 
@@ -92,6 +96,42 @@ export function useRecords() {
     loadRecords(status)
   }
 
+  async function cancelReport(item) {
+    showConfirmDialog({
+      title: '提示',
+      message:
+        '确定要取消此填报吗？',
+    })
+    .then(async () => {
+      try {
+        const url = `/h5-open-api/erp/h5/cancel`
+        const res = await post(url, [item.id])
+        if(res && res.code === 0 && res.data){
+          const target = allRecords.value.find(r => r.id === item.id)
+          if (target) target.approvalStatus = 3
+          return true
+        }else{
+          showTip(res.msg || '取消填报失败')
+          return false
+        }
+      } catch (e) {
+        console.error('取消填报记录失败:', e)
+        showTip(e.message || '取消填报失败')
+      } finally {
+      }
+    })
+    .catch(() => {
+      // on cancel
+    });
+  }
+  // 监听详情页审批状态变更，同步更新列表中对应记录
+  watch(approvalUpdate, (val) => {
+    if (val.id && val.timestamp) {
+      const target = allRecords.value.find(r => r.id === val.id)
+      if (target) target.approvalStatus = val.status
+    }
+  })
+
   onMounted(() => {
     loadRecords()
   })
@@ -113,6 +153,7 @@ export function useRecords() {
     goDetail,
     scrollRef,
     formatToDateTime,
-    handleStatusChange
+    handleStatusChange,
+    cancelReport
   }
 }

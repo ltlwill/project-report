@@ -8,6 +8,7 @@ export function useHome() {
   const router = useRouter()
   const userStore = useUserStore()
 
+  const empId = ref(userStore.empId)
   const empName = ref(userStore.empName)
   const chartRef = ref(null)
   const pieChartRef = ref(null)
@@ -21,6 +22,13 @@ export function useHome() {
     projectCount: 33,
     weekHours: 73.5,
     monthHours: 312.5
+  })
+
+  const statisticsData = ref({
+    summaryData: {totalCount: 0, weekHours: 0, monthHours: 0},
+    weekData: {},
+    last6MonthData: [],
+    productTypeSummaryData: []
   })
 
   const recentList = ref([])
@@ -71,7 +79,12 @@ export function useHome() {
     if (!chartRef.value) return
     chartInstance = echarts.init(chartRef.value)
     const days = ['周一', '周二', '周三', '周四', '周五']
-    const hours = [8, 7.5, 8, 6, 8.5]
+    // const hours = [8, 7.5, 8, 6, 8.5]
+    let hours = []
+    if(statisticsData.value?.weekData){
+      const weekData = statisticsData.value?.weekData || {}
+      hours = [weekData.week1, weekData.week2, weekData.week3, weekData.week4, weekData.week5]
+    }
 
     chartInstance.setOption({
       tooltip: { trigger: 'axis' },
@@ -115,6 +128,10 @@ export function useHome() {
   // 初始化饼图（项目工时分布）
   function initPieChart() {
     if (!pieChartRef.value) return
+    const data = (statisticsData.value?.productTypeSummaryData || []).map(item => ({
+      value: item.totalHours,
+      name: item.productType
+    }))
     pieChartInstance = echarts.init(pieChartRef.value)
     pieChartInstance.setOption({
       tooltip: { trigger: 'item', formatter: '{b}: {c}h ({d}%)' },
@@ -138,26 +155,42 @@ export function useHome() {
         emphasis: {
           label: { show: true, fontSize: 13, fontWeight: 'bold' }
         },
-        data: [
-          { value: 32, name: '器件-9XX', itemStyle: { color: '#1989fa' } },
-          { value: 24, name: '器件-N9XX', itemStyle: { color: '#07c160' } },
-          { value: 18, name: '器件-科研', itemStyle: { color: '#ff976a' } },
-          { value: 12, name: '器件-海外', itemStyle: { color: '#ee0a24' } },
-          { value: 8, name: '其他项目', itemStyle: { color: '#969799' } }
-        ]
+        data: data
+        // data: [
+        //   { value: 32, name: '器件-9XX', itemStyle: { color: '#1989fa' } },
+        //   { value: 24, name: '器件-N9XX', itemStyle: { color: '#07c160' } },
+        //   { value: 18, name: '器件-科研', itemStyle: { color: '#ff976a' } },
+        //   { value: 12, name: '器件-海外', itemStyle: { color: '#ee0a24' } },
+        //   { value: 8, name: '其他项目', itemStyle: { color: '#969799' } }
+        // ]
       }]
     })
+  }
+
+  function formatMonthName(month){
+    const arr = month.split('-')
+    return `${parseInt(arr[1])}月`
   }
 
   // 初始化折线图（月度工时趋势）
   function initLineChart() {
     if (!lineChartRef.value) return
+    const data = (statisticsData.value?.last6MonthData || []).map(item => {
+      return {
+        value: parseFloat(item.totalHours || 0),
+        name: item.month,
+        nameFmt: formatMonthName(item.month)
+      }
+    })
+    const xAxisData = data.map(item => item.nameFmt)
+    const seriesData = data.map(item => item.value)
     lineChartInstance = echarts.init(lineChartRef.value)
     lineChartInstance.setOption({
       tooltip: { trigger: 'axis' },
       xAxis: {
         type: 'category',
-        data: ['2月', '3月', '4月', '5月', '6月', '7月'],
+        data: xAxisData,
+        // data: ['2月', '3月', '4月', '5月', '6月', '7月'],
         axisLine: { lineStyle: { color: '#ddd' } },
         axisLabel: { color: '#666', fontSize: 11 }
       },
@@ -171,7 +204,8 @@ export function useHome() {
       },
       series: [{
         type: 'line',
-        data: [156, 168, 172, 160, 176, 148],
+        data: seriesData,
+        // data: [156, 168, 172, 160, 176, 148],
         smooth: true,
         symbol: 'circle',
         symbolSize: 8,
@@ -209,12 +243,34 @@ export function useHome() {
     return map[status] || '未知'
   }
 
-  onMounted(async () => {
-    currentDate.value = formatDate()
-    await nextTick()
+  async function initCharts() {
     initChart()
     initPieChart()
     initLineChart()
+  }
+
+  async function loadStatisticsData() { 
+    try {
+      const empId = userStore.empId || ''
+      // const empId = ''
+      const url = `/h5-open-api/erp/h5/statistics?empId=${empId}`
+      const res = await get(url)
+      const data = res.data || {}
+      statisticsData.value = data
+      await nextTick()
+      initCharts()
+    } catch (e) {
+      console.error('统计数据失败:', e)
+      detail.value = {}
+    } finally {
+    }
+  }
+
+  onMounted(async () => {
+    currentDate.value = formatDate()
+    await nextTick()
+    initCharts()
+    loadStatisticsData()
   })
 
   onBeforeUnmount(() => {
@@ -234,6 +290,7 @@ export function useHome() {
     recentList,
     goTo,
     getStatusType,
-    getStatusText
+    getStatusText,
+    statisticsData
   }
 }

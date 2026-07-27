@@ -136,7 +136,7 @@
 }
 
 .detail-back-btn,
-.detail-approve-btn {
+.detail-approve-btn,.detail-cancel-btn {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -162,8 +162,14 @@
   box-shadow: 0 4px 16px rgba(25, 137, 250, 0.4);
 }
 
+.detail-cancel-btn {
+  background: var(--van-button-warning-background);;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(25, 137, 250, 0.4);
+}
+
 .detail-back-btn:active,
-.detail-approve-btn:active {
+.detail-approve-btn:active,.detail-cancel-btn:active {
   opacity: 0.75;
 }
 

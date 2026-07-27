@@ -16,7 +16,7 @@
 
       <van-search
         v-model="keyword"
-        placeholder="搜索项目名称或编号"
+        placeholder="搜索项目编号、名称、型号"
         shape="round"
         @search="onSearch"
         @update:model-value="onSearch"

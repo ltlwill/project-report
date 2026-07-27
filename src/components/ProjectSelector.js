@@ -1,12 +1,16 @@
 import { ref, watch, computed } from 'vue'
 import { get } from '@/utils/request.js'
 import { useTimesheetStore } from '@/store/modules/timesheet.js'
+import { useUserStore } from '@/store/modules/user.js'
 
 export const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false'
 
 export function useProjectSelector(props, emit) {
   const timesheetStore = useTimesheetStore()
+  const userStore = useUserStore()
 
+  const empId = ref(userStore.empId)
+  const empName = ref(userStore.empName)
   const keyword = ref('')
   const loading = ref(false)
   const projectList = ref([])
@@ -23,8 +27,9 @@ export function useProjectSelector(props, emit) {
   async function loadProjects() {
     loading.value = true
     try {
-      const url = USE_MOCK ? '/project/list' : '/h5-open-api/erp/h5/project-list'
-      const res = await get(url, { keyword: keyword.value })
+      // const url = USE_MOCK ? '/project/list' : '/h5-open-api/erp/h5/project-list'
+      const url = USE_MOCK ? '/project/list' : '/h5-open-api/erp/h5/project-list-plm'
+      const res = await get(url, {empId: empId.value, empName: empName.value, keyword: keyword.value })
       const data = res.data || res
       projectList.value = Array.isArray(data) ? data : (data.list || [])
     } catch (e) {

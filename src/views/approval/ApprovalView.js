@@ -12,15 +12,31 @@ export function useApproval() {
   const router = useRouter()
 
   // 审批页滚动容器是 .approval-scroll（页面自己的）
+  // const scrollRef = ref(null)
+  // let savedScrollTop = 0
+
+  // onBeforeRouteLeave(() => {
+  //   if (scrollRef.value) savedScrollTop = scrollRef.value.scrollTop
+  // })
+
+  // onActivated(() => {
+  //   if (scrollRef.value) scrollRef.value.scrollTop = savedScrollTop
+  // })
+
   const scrollRef = ref(null)
   let savedScrollTop = 0
 
   onBeforeRouteLeave(() => {
-    if (scrollRef.value) savedScrollTop = scrollRef.value.scrollTop
+    // .app-content 是 scrollRef 的父元素
+    const appContent = scrollRef.value?.closest('.app-content')
+    if (appContent) savedScrollTop = appContent.scrollTop
   })
 
   onActivated(() => {
-    if (scrollRef.value) scrollRef.value.scrollTop = savedScrollTop
+    const appContent = scrollRef.value?.closest('.app-content')
+    if (appContent) {
+      appContent.scrollTop = savedScrollTop
+    }
   })
 
   const keyword = ref('')
@@ -33,8 +49,9 @@ export function useApproval() {
   const statusTabs = [
     { label: '全部', value: null },
     { label: '未审批', value: 0 },
-    { label: '通过', value: 1 },
-    { label: '不通过', value: 2 }
+    { label: '已通过', value: 1 },
+    { label: '不通过', value: 2 },
+    { label: '已取消', value: 3 },
   ]
 
   // 过滤后的列表
@@ -55,7 +72,7 @@ export function useApproval() {
   }
 
   function getStatusText(status) {
-    const map = { 0: '未审批', 1: '通过', 2: '不通过' }
+    const map = { 0: '未审批', 1: '已通过', 2: '不通过', 3: '已取消' }
     return map[status] ?? '未知'
   }
 

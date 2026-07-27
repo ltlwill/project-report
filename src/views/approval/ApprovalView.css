@@ -1,7 +1,8 @@
 .approval-page {
-  display: flex;
+  /* display: flex;
   flex-direction: column;
-  height: 100%;
+  height: 100%; */
+  padding-bottom: 12px;
 }
 
 /* 可滚动内容区 */
@@ -19,6 +20,30 @@
   background: #f7f8fa;
   /* border-top: 1px solid #eee; */
   border-top: none;
+
+  /*add*/
+  position: absolute;
+  display: block;
+  width: stretch;
+  bottom: 60px;
+  background: transparent;
+
+  justify-items: center;
+  text-align: center;
+}
+.batch-approve-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(50px + constant(safe-area-inset-bottom));  /* iOS < 11.2 */
+  bottom: calc(50px + env(safe-area-inset-bottom));       /* iOS >= 11.2 */
+  /* padding: 10px 12px; */
+  /* background: #f7f8fa; */
+  background: transparent;
+  padding: 10px 15px 15px;
+}
+.batch-approve-bar .van-button {
+  /* width: 50%; */
 }
 
 .approval-search {
@@ -219,4 +244,8 @@
     bottom: 0;
     right: 0;
     position: absolute;
+}
+
+.approval-page .van-pull-refresh{
+  padding-bottom: 55px;
 }

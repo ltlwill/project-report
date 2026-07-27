@@ -12,10 +12,10 @@
           <span class="detail-label">工号</span>
           <span class="detail-value">{{ detail.empId }}</span>
         </div> -->
-        <div class="detail-row">
+        <!-- <div class="detail-row">
           <span class="detail-label">岗&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;位</span>  
           <span class="detail-value">{{ detail.positionName }}</span>
-        </div>
+        </div> -->
         <div class="detail-row">
           <span class="detail-label">汇报日期</span>
           <span class="detail-value">{{ detail.reportDate }}</span>
@@ -79,6 +79,10 @@
       <div v-if="isPending" class="detail-approve-btn" @click="openApproval">
         <van-icon name="passed" size="18" />
         <span>审批</span>
+      </div>
+      <div v-if="isUnapproved" class="detail-cancel-btn" @click="cancelReport">
+        <van-icon name="revoke" size="18"/>
+        <span>取消</span>
       </div>
     </div>
 

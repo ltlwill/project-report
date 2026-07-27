@@ -24,6 +24,7 @@ export const useTimesheetStore = defineStore('timesheet', () => {
         projectCode: project.projectCode || '',
         projectName: project.projectName || '',
         plmCode: project.plmCode || '',
+        productType: project.productType || '',
         hours: 0,
         completed: false
       })
