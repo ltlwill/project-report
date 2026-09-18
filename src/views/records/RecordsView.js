@@ -4,7 +4,7 @@ import { get, post } from '@/utils/request.js'
 import { formatToDateTime } from '@/utils/dateUtil.js'
 import { showConfirmDialog } from 'vant'
 import { showTip } from '@/utils/tip'
-import { approvalUpdate } from '@/shared/approvalUpdate.js'
+import { approvalUpdate, removeItem } from '@/shared/approvalUpdate.js'
 
 export const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false'
 
@@ -63,7 +63,7 @@ export function useRecords() {
     loading.value = true
     try {
       const url = USE_MOCK ? '/timesheet/records' : '/h5-open-api/erp/h5/submit-records'
-      const params = { keyword: keyword.value, pageSize: 100}
+      const params = { type: 0, keyword: keyword.value, pageSize: 100}
       if(approvalStatus !== null && approvalStatus !== undefined){
         params.approvalStatus = approvalStatus
       }
@@ -124,11 +124,45 @@ export function useRecords() {
       // on cancel
     });
   }
+
+  async function deleteReport(item) {
+    showConfirmDialog({
+      title: '提示',
+      message:
+        '确定要删除此填报吗？',
+    })
+    .then(async () => {
+      try {
+        const url = `/h5-open-api/erp/h5/delete`
+        const res = await post(url, [item.id])
+        if(res && res.code === 0 && res.data){
+          const index = allRecords.value.findIndex(r => r.id === item.id)
+          if (index > -1) allRecords.value.splice(index, 1)
+          return true
+        }else{
+          showTip(res.msg || '删除填报失败')
+          return false
+        }
+      } catch (e) {
+        console.error('删除填报记录失败:', e)
+        showTip(e.message || '删除填报失败')
+      } finally {
+      }
+    })
+  }
+
   // 监听详情页审批状态变更，同步更新列表中对应记录
   watch(approvalUpdate, (val) => {
     if (val.id && val.timestamp) {
       const target = allRecords.value.find(r => r.id === val.id)
       if (target) target.approvalStatus = val.status
+    }
+  })
+
+  watch(removeItem, (val) => {
+    if (val.id && val.timestamp) {
+      const index = allRecords.value.findIndex(r => r.id === val.id)
+      if (index > -1) allRecords.value.splice(index, 1)
     }
   })
 
@@ -154,6 +188,7 @@ export function useRecords() {
     scrollRef,
     formatToDateTime,
     handleStatusChange,
-    cancelReport
+    cancelReport,
+    deleteReport
   }
 }

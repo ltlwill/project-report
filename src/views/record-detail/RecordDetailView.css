@@ -136,7 +136,7 @@
 }
 
 .detail-back-btn,
-.detail-approve-btn,.detail-cancel-btn {
+.detail-approve-btn,.detail-cancel-btn,.detail-delete-btn {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -163,7 +163,13 @@
 }
 
 .detail-cancel-btn {
-  background: var(--van-button-warning-background);;
+  background: var(--van-button-warning-background);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(25, 137, 250, 0.4);
+}
+
+.detail-delete-btn {
+  background: var(--van-button-danger-background);
   color: #fff;
   box-shadow: 0 4px 16px rgba(25, 137, 250, 0.4);
 }

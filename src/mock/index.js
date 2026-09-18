@@ -180,6 +180,16 @@ export async function matchMock(url, options = {}) {
     return success({ message: '审批完成' })
   }
 
+  // ========== 工时统计明细 ==========
+  if (url === '/statistics/detail-summary' && method === 'GET') {
+    return success([
+      { projectName: '智能物联管理平台', workHours: 42.5, ratioPercent: 46.96, totalWorkHours: 90.5 },
+      { projectName: '仓储物流系统升级', workHours: 24, ratioPercent: 26.52, totalWorkHours: 90.5 },
+      { projectName: '移动端工时申报优化', workHours: 16.5, ratioPercent: 18.23, totalWorkHours: 90.5 },
+      { projectName: '设备数据采集模块', workHours: 7.5, ratioPercent: 8.29, totalWorkHours: 90.5 }
+    ])
+  }
+
   // 未匹配到任何 mock 路由
   return null
 }

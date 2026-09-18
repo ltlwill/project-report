@@ -1,10 +1,11 @@
-import { ref, computed, onMounted, onActivated } from 'vue'
+import { ref, computed, onMounted, onActivated, nextTick } from 'vue'
 import { showToast, showConfirmDialog } from 'vant'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/modules/user.js'
 import { useTimesheetStore } from '@/store/modules/timesheet.js'
 import { get, post } from '@/utils/request.js'
 import { showTip } from '@/utils/tip'
+import dayjs from 'dayjs'
 
 export function useTimesheet() {
   const router = useRouter()
@@ -18,9 +19,12 @@ export function useTimesheet() {
   const workHours = ref(8)
   const hasLeaveInfo = ref(false)
   const currOriginLeaveDay = ref(0)
-  const leaveType = ref('')
+  const currValidWorkHour = ref(0)
+  const leaveDesc = ref('')
+  const leaveDetails = ref([])
   const unSubmitDates = ref([])
   const unSubmitDatesMessage = ref('')
+  const currentEmpPositionInfo = ref({})
 
   // 日期相关
   const now = new Date()
@@ -31,8 +35,14 @@ export function useTimesheet() {
     String(now.getMonth() + 1).padStart(2, '0'),
     String(now.getDate()).padStart(2, '0')
   ])
-  const minDate = new Date(now.getFullYear() - 1, 0, 1)
+  // const minDate = new Date(now.getFullYear() - 1, 0, 1)
   // const maxDate = new Date(now.getFullYear() + 1, 11, 31)
+  const minDate = computed(() => {
+    const entryDate = currentEmpPositionInfo.value?.entryDate
+    const rdTransferDate = currentEmpPositionInfo.value?.rdTransferDate
+    const startDate = rdTransferDate ? rdTransferDate : entryDate
+    return dayjs(startDate).toDate()
+  })
   const maxDate = now
 
 
@@ -42,29 +52,16 @@ export function useTimesheet() {
   const cachedPosition = JSON.parse(localStorage.getItem('last_position') || 'null')
   const selectedPosition = ref(cachedPosition?.text || '')
   const selectedPositionValue = ref(cachedPosition?.value || '')
-
-  const positionColumns = [
-    { text: '业务负责人', value: 'businessManager' },
-    { text: '研发技术总工', value: 'techChiefEngineer' },
-    { text: 'PM', value: 'pm' },
-    { text: '光学设计', value: 'opticalDesigner' },
-    { text: '规格书设计', value: 'specDesigner' },
-    { text: '机械设计', value: 'mechanicalDesigner' },
-    { text: '软件设计', value: 'softwareDesigner' },
-    { text: '电子设计', value: 'electronicDesigner' },
-    { text: '物料齐套', value: 'materialKittingPerson' },
-    { text: '开单', value: 'orderClerk' },
-    { text: 'α样品制作', value: 'alphaSampleProducer' },
-    { text: '销售人员', value: 'salesPerson' },
-    { text: 'PMC人员', value: 'pmc' },
-    { text: '大批量负责人', value: 'massProductionManager' },
-  ]
+  const allHolidayScheduleData = ref([])
+  const attendanceWorkhoursData = ref({})
+  const holidayInfo = ref({isHoliday: false, holidayDesc: '', isWorkDay: true, isWeekendDay: false})
 
   // 项目列表
   const showProjectSelector = ref(false)
   const projectList = computed(() => timesheetStore.projectList)
   const projectCount = computed(() => timesheetStore.projectCount)
   const totalHours = computed(() => timesheetStore.totalHours)
+  const isDL = computed(() => currentEmpPositionInfo.value?.empType === 'DL')
 
   // 提交状态
   const submitting = ref(false)
@@ -76,26 +73,42 @@ export function useTimesheet() {
     return `${y}-${m}-${d}`
   }
 
-  function onDateConfirm({ selectedValues }) {
+  async function onDateConfirm({ selectedValues }) {
     reportDate.value = selectedValues.join('-')
     showDatePicker.value = false
+    await loadEmpAttendanceData(reportDate.value)
     loadCurrentDateLeaveInfo(reportDate.value)
+    loadLoaderReportData(reportDate.value)
+    calcHolidayInfoByDate(reportDate.value)
   }
 
   async function loadCurrentDateLeaveInfo(reportDate) {
     try {
       const url = `/h5-open-api/erp/h5/get-leave-info?empId=${empId.value}&date=${reportDate}`
       const res = await get(url)
-      if(res.data){
-        hasLeaveInfo.value = true
-        workHours.value = res.data?.currValidWorkHour
-        currOriginLeaveDay.value = res.data?.currOriginLeaveDay
-        leaveType.value = res.data?.type || '请假'
+      if(isDL.value){
+        const atteWorkHours = attendanceWorkhoursData.value[reportDate] || 0
+        workHours.value = atteWorkHours
       }else{
-        hasLeaveInfo.value = false
-        workHours.value = 8
-        currOriginLeaveDay.value = 0
-        leaveType.value = ''
+        if(res.data && res.data.length){
+          hasLeaveInfo.value = true
+          const totalLeaveHours =(res.data || []).reduce((acc, cur) => acc + cur.currLeaveHour, 0)
+          const totalValidWorkHour = 8 - totalLeaveHours
+          workHours.value = holidayInfo.value?.isHoliday ? 0 : totalValidWorkHour
+          currValidWorkHour.value = totalValidWorkHour
+          leaveDesc.value = (res.data || []).map((item) => item.type + " " + item.currLeaveHour + "h").join(';')
+          leaveDetails.value = (res.data || []).map((item) => ({ 
+            leaveType: item.type,
+            leaveHour: item.currLeaveHour,
+            leaveDate: item.date
+          }))
+        }else{
+          hasLeaveInfo.value = false
+          workHours.value = holidayInfo.value?.isHoliday ? 0 : 8
+          currValidWorkHour.value = 0
+          leaveDesc.value = ''
+          leaveDetails.value = []
+        }
       }
     } catch (e) {
       console.error('加载请假信息失败失败:', e)
@@ -103,9 +116,36 @@ export function useTimesheet() {
     }
   } 
 
+  async function loadLoaderReportData(reportDate) {
+    try {
+      const url = `/h5-open-api/erp/h5/get-leader-report?type=0&empId=${empId.value}&date=${reportDate}`
+      const res = await get(url)
+      if(res.data && res.data.length){
+        timesheetStore.projectList = (res.data || []).map((item) => ({
+          projectId: item.projectCode,
+          projectCode: item.projectCode,
+          projectName: item.projectName,
+          plmCode: item.plmCode,
+          specModel: item.specModel,
+          shellName: item.shellName,
+          productType: item.productType,
+          hours: item.workHours,
+          completed: item.stageComplete,
+          leaderReport: true
+        }))
+        showTip('已自动为你拉取上级当日报告')
+      }else{
+        timesheetStore.projectList = (timesheetStore.projectList || []).filter((item) => !item.leaderReport)
+      }
+    } catch (e) {
+      console.error('加载领导报告信息失败:', e)
+    } finally {
+    }
+  } 
+
   async function loadUnSubmitReportDates() {
     try {
-      const url = `/h5-open-api/erp/h5/get-unsubmit-dates?empId=${empId.value}`
+      const url = `/h5-open-api/erp/h5/get-unsubmit-dates?type=0&empId=${empId.value}`
       const res = await get(url)
       if(res.data){
         unSubmitDates.value = res.data || []
@@ -119,6 +159,81 @@ export function useTimesheet() {
     } finally {
     }
   } 
+
+  async function loadHolidaysScheduleData() {
+    try {
+      const url = `/h5-open-api/erp/h5/get-work-date-schedule?year=${now.getFullYear()}&empId=${empId.value}&type=0`
+      const res = await get(url)
+      allHolidayScheduleData.value = res?.data || []
+      calcHolidayInfoByDate(reportDate.value)
+    } catch (e) {
+      console.error('加载未填写报告日期数据失败:', e)
+    } finally {
+    }
+  } 
+
+  async function loadEmpEntryAndLeaveInfo() {
+    try {
+      const url = `/h5-open-api/erp/h5/get-entry-leave-info?&empId=${empId.value}`
+      const res = await get(url)
+      currentEmpPositionInfo.value = res?.data || {}
+    } catch (e) {
+      console.error('加载员工入职离职信息数据失败:', e)
+    } finally {
+    }
+  } 
+
+  async function loadEmpAttendanceData(dateString) {
+    try {
+      const url = `/h5-open-api/erp/h5/get-attendance-work-hours-map?empNo=${empId.value}&empType=DL&dates=${dateString}`
+      const res = await get(url)
+      attendanceWorkhoursData.value = res?.data || {}
+    } catch (e) {
+      console.error('加载考勤工时数据失败:', e)
+    } finally {
+    }
+  } 
+
+  function isContainsInHolidayScheduleDays(workDate) {
+    return allHolidayScheduleData.value.some((item) => item.scheduleDate === workDate)
+  }
+
+  async function calcHolidayInfoByDate(dateString) {
+    await nextTick()
+    const now = dayjs()
+    const weekMap = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+    const weekEndDayIndex = [0, 6]
+    let current = dayjs(dateString)
+    const dateStr = current.format('YYYY-MM-DD')
+    const dayIndex = current.day()
+    const dayName = weekMap[dayIndex]
+    const isWeekendDay = weekEndDayIndex.includes(dayIndex) // 周末
+    const isWorkDay = !weekEndDayIndex.includes(dayIndex) // 工作日
+    const atteWorkHours = attendanceWorkhoursData.value[dateStr] || 0
+    let isHoliday = false
+    let holidayDesc = ''
+    if (current.isAfter(now)) {
+      isHoliday = true
+      holidayDesc = '未入职'
+      isHoliday = true
+    } else if ((isWorkDay && isContainsInHolidayScheduleDays(dateStr) && !isDL.value) || (isWorkDay && isContainsInHolidayScheduleDays(dateStr) && isDL.value && atteWorkHours <= 0)) {
+      isHoliday = true
+      holidayDesc = '节假日'
+    } else if ((isWeekendDay && isContainsInHolidayScheduleDays(dateStr) && !isDL.value) || (isWeekendDay && isContainsInHolidayScheduleDays(dateStr) && isDL.value && atteWorkHours > 0)) {
+      isHoliday = false
+      holidayDesc = isDL.value ? '班' : '补班'
+    } else if (isWeekendDay && isDL.value && atteWorkHours > 0) {
+      isHoliday = false
+      holidayDesc = '班'
+    } else {
+      isHoliday = isWeekendDay
+      holidayDesc = isDL.value ? '休' : '周末'
+    }
+    holidayInfo.value = { isHoliday, holidayDesc, isWorkDay, isWeekendDay }
+    if(isHoliday){
+      workHours.value = 0
+    }
+  }
 
   function onPositionConfirm({ selectedOptions }) {
     selectedPosition.value = selectedOptions[0]?.text || ''
@@ -202,18 +317,22 @@ export function useTimesheet() {
     const now = new Date()
     const today = formatDate(now)
     const yesterday = formatDate(new Date(now.setDate(now.getDate() - 1)))
-    if(reportDate.value === today && now.getHours() < 12){
-      showTip('12点前不能提交当天的填报')
+    if(reportDate.value === today && now.getHours() < 18){
+      showTip('18点前不能提交当天的填报')
       return
     }else if(reportDate.value === yesterday && now.getHours() >= 10){
-      showTip('10点后不能提交昨天的填报')
-      return
+      // showTip('10点后不能提交昨天的填报')
+      // return
     }else if(reportDate.value > today){
       showTip('不能提交将来的填报')
       return
     }else if(reportDate.value < yesterday){
       // showTip('不能提交昨天之前的填报')
       // return
+    }
+    let isSupplement = false
+    if((reportDate.value === yesterday && now.getHours() >= 12) || reportDate.value < yesterday){
+      isSupplement = true
     }
     const arr = reportDate.value.split('-')
     const formattedDate = formatDateWithWeekDay(new Date(arr[0], arr[1] - 1, arr[2]))
@@ -232,6 +351,8 @@ export function useTimesheet() {
 
     submitting.value = true
     try {
+      const dataType = 0
+      const dateArr = reportDate.value.split('-')
       const submitData = {
         empId: empId.value,
         empName: empName.value,
@@ -240,6 +361,12 @@ export function useTimesheet() {
         reportDate: reportDate.value,
         totalWorkHours: totalHours.value,
         totalCount: projectList.value.length,
+        supplement: isSupplement || false,
+        type: dataType,
+        year: dateArr[0],
+        month: dateArr[1],
+        startDate: reportDate.value,
+        endDate: reportDate.value,
         projectDetails: projectList.value.map(p => ({
           projectId: p.projectId,
           projectCode: p.projectCode,
@@ -249,8 +376,10 @@ export function useTimesheet() {
           shellName: p.shellName,
           productType: p.productType,
           workHours: p.hours,
-          stageComplete: p.completed
-        }))
+          stageComplete: p.completed,
+          type: dataType
+        })),
+        leaveDetails: leaveDetails.value || []
       }
       await post('/h5-open-api/erp/h5/submit', submitData)
       // showToast({ message: '提交成功', type: 'success' })
@@ -267,8 +396,12 @@ export function useTimesheet() {
     }
   }
 
-  onMounted(() => {
+  onMounted(async () => {
+    await loadHolidaysScheduleData()
+    await loadEmpEntryAndLeaveInfo()
+    await loadEmpAttendanceData(reportDate.value)
     loadCurrentDateLeaveInfo(reportDate.value)
+    loadLoaderReportData(reportDate.value)
   })
 
   onActivated(() => {
@@ -276,9 +409,9 @@ export function useTimesheet() {
   })
 
   return {
-    empId, empName, workHours, hasLeaveInfo, currOriginLeaveDay,leaveType,
-    reportDate, showDatePicker, dateValue, minDate, maxDate,
-    selectedPosition, showPositionPicker, positionColumns,
+    empId, empName, workHours, hasLeaveInfo, currOriginLeaveDay,currValidWorkHour,leaveDesc,
+    reportDate, showDatePicker, dateValue, minDate, maxDate,holidayInfo,
+    selectedPosition, showPositionPicker,
     showProjectSelector, projectList, projectCount, totalHours,
     submitting, onDateConfirm, onPositionConfirm,
     onRemoveProject, onHoursChange, onCompletedChange, onSubmit, 

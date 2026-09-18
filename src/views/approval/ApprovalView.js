@@ -106,7 +106,7 @@ export function useApproval() {
     loading.value = true
     try {
       const url = USE_MOCK ? '/timesheet/approval-list' : '/h5-open-api/erp/h5/approval-list'
-      const params = { keyword: keyword.value, pageSize: 100 }
+      const params = { type: 0, keyword: keyword.value, pageSize: 1000 }
       if(approvalStatus !== null && approvalStatus !== undefined){
         params.approvalStatus = approvalStatus
       }

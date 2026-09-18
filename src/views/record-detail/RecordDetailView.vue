@@ -38,11 +38,11 @@
           <span class="detail-label">审&nbsp;&nbsp;批&nbsp;&nbsp;人</span>
           <span class="detail-value remark-text">{{ detail.approvalEmpName }}({{ detail.approvalEmpNo }})</span>
         </div>
-        <div v-if="detail.approvalTime" class="detail-row">
+        <div v-if="detail.approvalEmpName && detail.approvalTime" class="detail-row">
           <span class="detail-label">审批时间</span>
           <span class="detail-value remark-text">{{ formatToDateTime(detail.approvalTime) }}</span>
         </div>
-        <div v-if="detail.approvalComment" class="detail-row">
+        <div v-if="detail.approvalEmpName && detail.approvalComment" class="detail-row">
           <span class="detail-label">审批意见</span>
           <span class="detail-value remark-text">{{ detail.approvalComment }}</span>
         </div>
@@ -59,7 +59,7 @@
           >
             <div class="project-index">{{ index + 1 }}</div>
             <div class="project-detail-info">
-              <div class="project-detail-no">{{ item.plmCode }}</div>
+              <!-- <div class="project-detail-no">{{ item.plmCode }}</div> -->
               <div class="project-detail-name">{{ item.projectName }}
                 <van-tag type="success" class="stage-complete-tag" v-if="item.stageComplete">阶段完成</van-tag>
               </div>
@@ -80,9 +80,13 @@
         <van-icon name="passed" size="18" />
         <span>审批</span>
       </div>
-      <div v-if="isUnapproved" class="detail-cancel-btn" @click="cancelReport">
+      <!-- <div v-if="isUnapproved" class="detail-cancel-btn" @click="cancelReport">
         <van-icon name="revoke" size="18"/>
         <span>取消</span>
+      </div> -->
+      <div v-if="isSubmitList" class="detail-delete-btn" @click="deleteReport">
+        <van-icon name="delete" size="18"/>
+        <span>删除</span>
       </div>
     </div>
 

@@ -31,7 +31,7 @@
     <!-- 记录列表 -->
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
       <van-loading v-if="loading && records.length === 0" class="records-loading" />
-      <van-empty v-else-if="records.length === 0" description="暂无填报记录" />
+      <van-empty v-else-if="records.length === 0" description="暂无数据" />
       <div v-else class="records-list">
         <div
           v-for="item in records"
@@ -69,7 +69,7 @@
               <span class="info-icon"><van-icon name="orders-o" size="14" /></span>
               <span class="info-text">项&nbsp;&nbsp;目&nbsp;&nbsp;数：{{ item.totalCount }}</span>
             </div>
-            <van-button
+            <!-- <van-button
               v-if="item.approvalStatus === 0"
               :class="operate-button"
               icon="revoke"
@@ -78,6 +78,15 @@
               @click.stop="cancelReport(item)"
             >
               取消
+            </van-button> -->
+            <van-button
+              :class="operate-button"
+              icon="delete"
+              size="small"
+              type="danger"
+              @click.stop="deleteReport(item)"
+            >
+              删除
             </van-button>
           </div>
 

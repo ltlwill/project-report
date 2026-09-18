@@ -4,7 +4,7 @@ import { showToast, showConfirmDialog } from 'vant'
 import { get, post } from '@/utils/request.js'
 import { showTip } from '@/utils/tip'
 import { formatToDateTime } from '@/utils/dateUtil.js'
-import { approvalUpdate } from '@/shared/approvalUpdate.js'
+import { approvalUpdate, removeItem } from '@/shared/approvalUpdate.js'
 
 export const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false' 
 
@@ -29,6 +29,7 @@ export function useRecordDetail() {
   // 当前记录是否未审批
   const isPending = computed(() => detail.value.approvalStatus === 0 && fromPage === 'approval-list')
   const isUnapproved = computed(() => detail.value.approvalStatus === 0 && fromPage === 'submit-list')
+  const isSubmitList = computed(() => fromPage === 'submit-list')
 
   function openApproval() {
     approvalStatus.value = 1
@@ -100,6 +101,32 @@ export function useRecordDetail() {
       // on cancel
     });
   }
+
+  async function deleteReport() {
+    showConfirmDialog({
+      title: '提示',
+      message:
+        '确定要删除此填报吗？',
+    })
+    .then(async () => {
+      try {
+        const url = `/h5-open-api/erp/h5/delete`
+        const res = await post(url, [detail.value.id])
+        if(res && res.code === 0 && res.data){
+          removeItem.value = {id: detail.value.id, timestamp: Date.now()}
+          goBack()
+          return true
+        }else{
+          showTip(res.msg || '删除填报失败')
+          return false
+        }
+      } catch (e) {
+        console.error('删除填报记录失败:', e)
+        showTip(e.message || '删除填报失败')
+      } finally {
+      }
+    });
+  }
   
   function getStatusType(status) {
     const map = { 0: 'warning', 1: 'success', 2: 'danger' }
@@ -149,6 +176,8 @@ export function useRecordDetail() {
     openApproval,
     onApprovalConfirm,
     cancelReport,
-    formatToDateTime
+    deleteReport,
+    formatToDateTime, 
+    isSubmitList
   }
 }

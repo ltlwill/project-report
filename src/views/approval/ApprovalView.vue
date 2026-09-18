@@ -33,7 +33,7 @@
       <!-- 审批列表 -->
       <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
         <van-loading v-if="loading && records.length === 0" class="approval-loading" />
-        <van-empty v-else-if="records.length === 0" description="暂无审批记录" />
+        <van-empty v-else-if="records.length === 0" description="暂无数据" />
         <div v-else class="approval-list">
           <div
             v-for="item in records"

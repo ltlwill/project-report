@@ -34,7 +34,7 @@
           >
             <div class="project-info">
               <!-- <div class="project-no">{{ item.specModel }}</div> -->
-              <div class="project-no">{{ item.plmCode }}</div>
+              <!-- <div class="project-no">{{ item.plmCode }}</div> -->
               <div class="project-name">{{ item.projectName }}</div>
             </div>
             <van-button
@@ -67,7 +67,8 @@
 import { useProjectSelector } from './ProjectSelector.js'
 export default {
   props: {
-    modelValue: { type: Boolean, default: false }
+    modelValue: { type: Boolean, default: false },
+    reportDate: { type: String, default: '' }
   },
   emits: ['update:modelValue', 'add'],
   setup(props, { emit }) {

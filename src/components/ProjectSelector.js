@@ -27,9 +27,10 @@ export function useProjectSelector(props, emit) {
   async function loadProjects() {
     loading.value = true
     try {
-      // const url = USE_MOCK ? '/project/list' : '/h5-open-api/erp/h5/project-list'
+      const reportDate = props.reportDate
       const url = USE_MOCK ? '/project/list' : '/h5-open-api/erp/h5/project-list-plm'
-      const res = await get(url, {empId: empId.value, empName: empName.value, keyword: keyword.value })
+      const res = await get(url, {empId: empId.value, empName: empName.value, keyword: keyword.value, 
+          currentStartDate: reportDate, currentEndDate: reportDate})
       const data = res.data || res
       projectList.value = Array.isArray(data) ? data : (data.list || [])
     } catch (e) {

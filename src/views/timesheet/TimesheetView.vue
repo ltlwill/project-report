@@ -16,7 +16,10 @@
           <span class="info-label">工作时长</span>
           <!-- <span class="info-value">{{ workHours }}h/天</span> -->
           <span class="info-value">{{ workHours }}h</span>
-          <span v-if="hasLeaveInfo" class="leave-info">({{ leaveType }} {{ currOriginLeaveDay }} 天)</span>
+          <!-- <span v-if="hasLeaveInfo" class="leave-info">({{ leaveType }} {{ currOriginLeaveDay }} 天)</span> -->
+          <!-- <span v-if="hasLeaveInfo" class="leave-info">({{ leaveType }} {{ 8 - currValidWorkHour }}h)</span> -->
+          <span v-if="hasLeaveInfo && !holidayInfo.isHoliday" class="leave-info">({{ leaveDesc }})</span>
+          <span v-if="holidayInfo.isHoliday" class="holiday-info leave-info">({{ holidayInfo.holidayDesc }})</span>
         </div>
       </div>
 
@@ -56,7 +59,7 @@
               type="primary"
               plain
               icon="plus"
-              :disabled="workHours <= 0"
+              :disabled="workHours <= 0  || holidayInfo.isHoliday"
               @click="showProjectSelector = true"
             >
               选择项目
@@ -73,7 +76,7 @@
               <div class="project-card-header">
                 <div class="project-card-info">
                   <!-- <span class="project-no-text">{{ item.projectCode }}</span> -->
-                  <span class="project-no-text">{{ item.plmCode }}</span>
+                  <!-- <span class="project-no-text">{{ item.plmCode }}</span> -->
                   <span class="project-name-text">{{ item.projectName }}</span>
                 </div>
                 <van-icon
@@ -96,7 +99,7 @@
                   <van-stepper
                     :model-value="item.hours"
                     min="0"
-                    max="8"
+                    :max="workHours"
                     step="0.5"
                     input-width="50px"
                     @change="(val) => onHoursChange(item.projectId, val)"
@@ -115,7 +118,7 @@
         type="primary"
         block
         round
-        :disabled="workHours <= 0 || projectList.length <= 0"
+        :disabled="workHours <= 0 || projectList.length <= 0 || holidayInfo.isHoliday"
         :loading="submitting"
         loading-text="提交中..."
         @click="onSubmit"
@@ -142,7 +145,7 @@
           />
       </van-popup>
     <!-- 项目选择器弹窗 -->
-    <ProjectSelector v-model="showProjectSelector" />
+    <ProjectSelector v-model="showProjectSelector" :report-date="reportDate" />
   </div>
 </template>
 

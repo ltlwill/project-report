@@ -37,6 +37,10 @@
   font-size: 13px;
 }
 
+.holiday-info {
+  color: #ee0a24;
+}
+
 /* 表单卡片 */
 .form-card {
   background: #fff;

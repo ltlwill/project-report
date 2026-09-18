@@ -68,6 +68,20 @@
     }
   },
   {
+    "path": "/statistics",
+    "name": "Statistics",
+    "component": "views/statistics/StatisticsView",
+    "meta": {
+      "title": "统计",
+      "requiresAuth": true,
+      "tab": true,
+      "tabIndex": 4,
+      "icon": "bar-chart-o",
+      "activeIcon": "bar-chart-o",
+      "keepAlive": true
+    }
+  },
+  {
     "path": "/mine",
     "name": "Mine",
     "component": "views/mine/MineView",
@@ -75,7 +89,7 @@
       "title": "我的",
       "requiresAuth": true,
       "tab": true,
-      "tabIndex": 4,
+      "tabIndex": 5,
       "icon": "user-o",
       "activeIcon": "user-o"
     }

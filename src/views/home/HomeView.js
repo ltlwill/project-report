@@ -252,7 +252,7 @@ export function useHome() {
   async function loadStatisticsData() { 
     try {
       const empId = userStore.empId || ''
-      // const empId = ''
+      // const url = `/h5-open-api/erp/h5/statistics?type=0&empId=${empId}`
       const url = `/h5-open-api/erp/h5/statistics?empId=${empId}`
       const res = await get(url)
       const data = res.data || {}
