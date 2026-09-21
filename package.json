@@ -9,12 +9,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "clipboard": "^2.0.11",
+    "dayjs": "^1.11.10",
     "echarts": "^5.5.0",
     "pinia": "^2.1.7",
     "vant": "^4.9.22",
     "vue": "^3.4.21",
-    "vue-router": "^4.3.0",
-    "dayjs": "^1.11.10"
+    "vue-router": "^4.3.0"
   },
   "devDependencies": {
     "@vant/auto-import-resolver": "^1.2.1",

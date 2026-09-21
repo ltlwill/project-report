@@ -2,10 +2,11 @@
  * 统计模块逻辑
  * 工时数据汇总统计：当前登录人信息、时间区间筛选、概要汇总与项目明细
  */
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { get } from '@/utils/request.js'
 import { showTip } from '@/utils/tip'
 import { useUserStore } from '@/store/modules/user.js'
+import ClipboardJS from 'clipboard'
 import { generateCertificateImages } from './certificate.js'
 
 const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false'
@@ -143,6 +144,50 @@ export function useStatistics() {
     loadStatistics()
   }
 
+  // ===== 导出菜单（复制清单 / 存为图片） =====
+  const showExportMenu = ref(false)
+  let clipboardInstance = null
+
+  // 复制文本：项目名称清单（每行一个，方便粘贴到任意位置）
+  function buildProjectNamesText() {
+    return recordList.value.map(item => item.projectName).join('\n')
+  }
+
+  // 复制文本：项目明细表格（制表符分隔，粘贴到 Excel 自动分列）
+  function buildProjectDetailText() {
+    const rows = recordList.value.map(item =>
+      [item.projectName, (Number(item.workHours) || 0).toFixed(1), `${getRatioPercent(item).toFixed(2)}%`].join('\t')
+    )
+    return ['项目名称\t工时(h)\t占比(%)', ...rows].join('\n')
+  }
+
+  /**
+   * 初始化 ClipboardJS：绑定导出菜单中带 data-clip-type 的行，点击即复制
+   * （弹窗设置了 :lazy-render="false"，挂载时菜单 DOM 已存在）
+   */
+  function initClipboard() {
+    if (clipboardInstance) clipboardInstance.destroy()
+    clipboardInstance = new ClipboardJS('.export-menu-item[data-clip-type]', {
+      text: (trigger) =>
+        trigger.dataset.clipType === 'names' ? buildProjectNamesText() : buildProjectDetailText()
+    })
+    clipboardInstance.on('success', () => {
+      showExportMenu.value = false
+      showTip('已复制')
+    })
+    clipboardInstance.on('error', () => {
+      showTip('复制失败，请重试')
+    })
+  }
+
+  // 菜单中非复制项的动作（复制项由 ClipboardJS 直接处理）
+  function onExportMenuAction(action) {
+    if (action === 'image') {
+      showExportMenu.value = false
+      onExportCert()
+    }
+  }
+
   // ===== 凭证图导出 =====
   const showCert = ref(false)
   const generatingCert = ref(false)
@@ -181,6 +226,11 @@ export function useStatistics() {
   // keep-alive 缓存页面：仅首次挂载时加载，切换回页面不重新请求
   onMounted(() => {
     loadStatistics()
+    initClipboard()
+  })
+
+  onUnmounted(() => {
+    if (clipboardInstance) clipboardInstance.destroy()
   })
 
   return {
@@ -189,6 +239,7 @@ export function useStatistics() {
     quickRanges, activeQuickRange, onQuickRange,
     loading, refreshing, loadFailed, recordList, totalHours, projectCount,
     getRatioPercent, onDateRangeConfirm, onRefresh, loadStatistics,
-    showCert, generatingCert, certImages, onExportCert
+    showCert, generatingCert, certImages, onExportCert,
+    showExportMenu, onExportMenuAction
   }
 }

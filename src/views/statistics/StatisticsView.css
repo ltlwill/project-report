@@ -157,6 +157,7 @@
 }
 
 .export-btn .van-icon {
+  /* share-o 图标墨迹高约为字号的 0.88 倍，14px 时墨迹 ~12px 与 12px 中文齐平，避免上下边缘错位 */
   font-size: 14px;
   line-height: 1;
 }
@@ -308,5 +309,40 @@
   padding-bottom: 8px;
   text-align: center;
   font-size: 12px;
+  color: #969799;
+}
+
+/* ===== 导出菜单（复制 / 存为图片） ===== */
+.export-menu {
+  padding: 8px 0 12px;
+  background: #fff;
+}
+
+.export-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 20px;
+  font-size: 14px;
+  line-height: 1;
+  color: #333;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.export-menu-item:active {
+  background: #f5f6f7;
+}
+
+.export-menu-item .van-icon {
+  /* 同理：16px 时图标墨迹高度与 14px 文字更匹配 */
+  font-size: 16px;
+  line-height: 1;
+  color: #1989fa;
+}
+
+.export-menu-sub {
+  margin-left: auto;
+  font-size: 11px;
   color: #969799;
 }

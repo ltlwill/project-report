@@ -49,9 +49,9 @@
       <div class="statistics-detail">
         <div class="section-title-row">
           <div class="section-title">项目明细</div>
-          <div v-if="recordList.length > 0" class="export-btn" @click="onExportCert">
-            <van-icon name="photo-o" />
-            <span>存为图片</span>
+          <div v-if="recordList.length > 0" class="export-btn" @click="showExportMenu = true">
+            <van-icon name="share-o" />
+            <span>分享</span>
           </div>
         </div>
         <van-loading v-if="loading && recordList.length === 0" class="statistics-loading" />
@@ -89,6 +89,7 @@
       teleport="body"
       :z-index="2000"
       :style="{ height: '75%' }"
+      :safe-area-inset-bottom="true"
     >
       <van-calendar
         :poppable="false"
@@ -112,6 +113,7 @@
       teleport="body"
       :z-index="2000"
       :style="{ height: '88%' }"
+      :safe-area-inset-bottom="true"
     >
       <div class="cert-popup-content">
         <div class="cert-popup-header">
@@ -142,6 +144,35 @@
             </div>
           </div>
         </template>
+      </div>
+    </van-popup>
+
+    <!-- 导出菜单（复制清单 / 存为图片） -->
+    <van-popup
+      v-model:show="showExportMenu"
+      position="bottom"
+      round
+      teleport="body"
+      :z-index="2000"
+      :lazy-render="false"
+      :safe-area-inset-bottom="true"
+    >
+      <div class="export-menu">
+        <div class="export-menu-item" data-clip-type="names">
+          <van-icon name="notes-o" />
+          <span>复制项目名称</span>
+          <span class="export-menu-sub">每行一个</span>
+        </div>
+        <div class="export-menu-item" data-clip-type="detail">
+          <van-icon name="records-o" />
+          <span>复制项目明细</span>
+          <span class="export-menu-sub">可粘贴到 Excel</span>
+        </div>
+        <div class="export-menu-item" @click="onExportMenuAction('image')">
+          <van-icon name="photo-o" />
+          <span>存为图片</span>
+          <span class="export-menu-sub">生成完整长图</span>
+        </div>
       </div>
     </van-popup>
   </div>
