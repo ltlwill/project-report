@@ -54,6 +54,7 @@ export function useTimesheet() {
   const selectedPositionValue = ref(cachedPosition?.value || '')
   const allHolidayScheduleData = ref([])
   const attendanceWorkhoursData = ref({})
+  const currentEmpAttendanceDataIsNotExists = ref(false)
   const holidayInfo = ref({isHoliday: false, holidayDesc: '', isWorkDay: true, isWeekendDay: false})
 
   // 项目列表
@@ -61,7 +62,8 @@ export function useTimesheet() {
   const projectList = computed(() => timesheetStore.projectList)
   const projectCount = computed(() => timesheetStore.projectCount)
   const totalHours = computed(() => timesheetStore.totalHours)
-  const isDL = computed(() => currentEmpPositionInfo.value?.empType === 'DL')
+  // const isDL = computed(() => currentEmpPositionInfo.value?.empType === 'DL')
+  const isDL = computed(() => (currentEmpPositionInfo.value?.salaryType || '2') != '2')
 
   // 提交状态
   const submitting = ref(false)
@@ -77,7 +79,7 @@ export function useTimesheet() {
     reportDate.value = selectedValues.join('-')
     showDatePicker.value = false
     await loadEmpAttendanceData(reportDate.value)
-    loadCurrentDateLeaveInfo(reportDate.value)
+    await loadCurrentDateLeaveInfo(reportDate.value)
     loadLoaderReportData(reportDate.value)
     calcHolidayInfoByDate(reportDate.value)
   }
@@ -87,17 +89,18 @@ export function useTimesheet() {
       const url = `/h5-open-api/erp/h5/get-leave-info?empId=${empId.value}&date=${reportDate}`
       const res = await get(url)
       if(isDL.value){
-        const atteWorkHours = attendanceWorkhoursData.value[reportDate] || 0
+        const atteWorkHours = attendanceWorkhoursData.value[reportDate]?.totalWorkHours || 0
         workHours.value = atteWorkHours
       }else{
         if(res.data && res.data.length){
+          const validLeaveItems = res.data.filter((item) => !(item.type || '').includes('出差')) || []
           hasLeaveInfo.value = true
-          const totalLeaveHours =(res.data || []).reduce((acc, cur) => acc + cur.currLeaveHour, 0)
+          const totalLeaveHours =validLeaveItems.reduce((acc, cur) => acc + cur.currLeaveHour, 0)
           const totalValidWorkHour = 8 - totalLeaveHours
           workHours.value = holidayInfo.value?.isHoliday ? 0 : totalValidWorkHour
           currValidWorkHour.value = totalValidWorkHour
-          leaveDesc.value = (res.data || []).map((item) => item.type + " " + item.currLeaveHour + "h").join(';')
-          leaveDetails.value = (res.data || []).map((item) => ({ 
+          leaveDesc.value = validLeaveItems.map((item) => item.type + " " + item.currLeaveHour + "h").join(';')
+          leaveDetails.value = validLeaveItems.map((item) => ({ 
             leaveType: item.type,
             leaveHour: item.currLeaveHour,
             leaveDate: item.date
@@ -110,11 +113,46 @@ export function useTimesheet() {
           leaveDetails.value = []
         }
       }
+
+      // const attendanceMap = attendanceWorkhoursData.value || {}
+      // const atteData = attendanceMap[reportDate] || {}
+      // const finalWorkHours = getCurrentDateWorkHours(atteData)
+      // const workType = atteData.workType || ''
+      // let finalLeaveDesc = ''
+      // if (!isDL.value && finalWorkHours < 8) {
+      //   let leaveDesc = workType.replace(/\d+/ig, '')
+      //   if (!workType.includes('节日')) {
+      //     const leaveHours = atteData.leaveHours || 0
+      //     const absentHours = atteData.absentHours || 0
+      //     const descArr = []
+      //     if (leaveHours > 0 && leaveDesc) {
+      //       descArr.push(leaveDesc + leaveHours + 'h')
+      //     }
+      //     if (absentHours > 0 && leaveDesc) {
+      //       descArr.push(leaveDesc + absentHours + 'h')
+      //     }
+      //     finalLeaveDesc = descArr.length ? descArr.join(';') : ''
+      //     hasLeaveInfo.value = true
+      //   } else if (workType.includes('节日')) {
+      //     finalLeaveDesc = leaveDesc.replace(/节日/ig, '')
+      //   }
+      // }
+      // workHours.value = finalWorkHours
+      // leaveDesc.value = finalLeaveDesc
     } catch (e) {
       console.error('加载请假信息失败失败:', e)
     } finally {
     }
   } 
+
+  function getCurrentDateWorkHours(atteData){
+    let finalWorkHours = isDL.value ? atteData?.totalWorkHours || 0 : atteData?.workHours || 0
+    const workType = atteData?.workType || ''
+    if (!isDL.value && finalWorkHours > 0 && workType.includes('节日')) {
+      finalWorkHours = 0
+    }
+    return finalWorkHours
+  }
 
   async function loadLoaderReportData(reportDate) {
     try {
@@ -165,7 +203,7 @@ export function useTimesheet() {
       const url = `/h5-open-api/erp/h5/get-work-date-schedule?year=${now.getFullYear()}&empId=${empId.value}&type=0`
       const res = await get(url)
       allHolidayScheduleData.value = res?.data || []
-      calcHolidayInfoByDate(reportDate.value)
+      // calcHolidayInfoByDate(reportDate.value)
     } catch (e) {
       console.error('加载未填写报告日期数据失败:', e)
     } finally {
@@ -178,6 +216,7 @@ export function useTimesheet() {
       const res = await get(url)
       currentEmpPositionInfo.value = res?.data || {}
     } catch (e) {
+      currentEmpPositionInfo.value = {}
       console.error('加载员工入职离职信息数据失败:', e)
     } finally {
     }
@@ -185,10 +224,14 @@ export function useTimesheet() {
 
   async function loadEmpAttendanceData(dateString) {
     try {
-      const url = `/h5-open-api/erp/h5/get-attendance-work-hours-map?empNo=${empId.value}&empType=DL&dates=${dateString}`
+      // const url = `/h5-open-api/erp/h5/get-attendance-work-hours-map?empNo=${empId.value}&dates=${dateString}&isHourly=${isDL.value}`
+      const url = `/h5-open-api/erp/h5/get-attendance-detail-map?empNo=${empId.value}&dates=${dateString}`
       const res = await get(url)
       attendanceWorkhoursData.value = res?.data || {}
+      currentEmpAttendanceDataIsNotExists.value = Object.keys(res?.data || {}).length === 0
     } catch (e) {
+      attendanceWorkhoursData.value = {}
+      currentEmpAttendanceDataIsNotExists.value = true
       console.error('加载考勤工时数据失败:', e)
     } finally {
     }
@@ -209,7 +252,9 @@ export function useTimesheet() {
     const dayName = weekMap[dayIndex]
     const isWeekendDay = weekEndDayIndex.includes(dayIndex) // 周末
     const isWorkDay = !weekEndDayIndex.includes(dayIndex) // 工作日
-    const atteWorkHours = attendanceWorkhoursData.value[dateStr] || 0
+    const attendanceData = attendanceWorkhoursData.value || {}
+
+    const atteWorkHours = (attendanceData[dateString] || {})?.totalWorkHours || 0
     let isHoliday = false
     let holidayDesc = ''
     if (current.isAfter(now)) {
@@ -225,10 +270,29 @@ export function useTimesheet() {
     } else if (isWeekendDay && isDL.value && atteWorkHours > 0) {
       isHoliday = false
       holidayDesc = '班'
-    } else {
-      isHoliday = isWeekendDay
-      holidayDesc = isDL.value ? '休' : '周末'
+    } else if(isDL.value && atteWorkHours > 0){
+      isHoliday = false
+      holidayDesc = '班'
+    }else {
+      isHoliday = isDL.value ? true : isWeekendDay
+      holidayDesc = isDL.value ? currentEmpAttendanceDataIsNotExists.value ? '无考勤' : '休' : '周末'
     }
+
+    // const atteWorkHours = getCurrentDateWorkHours(attendanceData[dateString] || {})
+    // const workType = attendanceData[dateString]?.workType || ''
+    // const desc = currentEmpAttendanceDataIsNotExists.value ? '无考勤' : (workType.replace(/\d+/ig, '').replace(/节日/ig, ''))
+    // if (current.isAfter(now)) {
+    //   isHoliday = true
+    //   holidayDesc = '未入职'
+    //   isHoliday = true
+    // } else if(atteWorkHours <= 0){
+    //   isHoliday = true
+    //   holidayDesc = leaveDesc.value || desc
+    // } else {
+    //   isHoliday = atteWorkHours <= 0
+    //   holidayDesc = leaveDesc.value || desc
+    // }
+
     holidayInfo.value = { isHoliday, holidayDesc, isWorkDay, isWeekendDay }
     if(isHoliday){
       workHours.value = 0
@@ -400,8 +464,9 @@ export function useTimesheet() {
     await loadHolidaysScheduleData()
     await loadEmpEntryAndLeaveInfo()
     await loadEmpAttendanceData(reportDate.value)
-    loadCurrentDateLeaveInfo(reportDate.value)
+    await loadCurrentDateLeaveInfo(reportDate.value)
     loadLoaderReportData(reportDate.value)
+    calcHolidayInfoByDate(reportDate.value)
   })
 
   onActivated(() => {

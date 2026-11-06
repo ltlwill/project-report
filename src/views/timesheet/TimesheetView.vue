@@ -18,8 +18,8 @@
           <span class="info-value">{{ workHours }}h</span>
           <!-- <span v-if="hasLeaveInfo" class="leave-info">({{ leaveType }} {{ currOriginLeaveDay }} 天)</span> -->
           <!-- <span v-if="hasLeaveInfo" class="leave-info">({{ leaveType }} {{ 8 - currValidWorkHour }}h)</span> -->
-          <span v-if="hasLeaveInfo && !holidayInfo.isHoliday" class="leave-info">({{ leaveDesc }})</span>
-          <span v-if="holidayInfo.isHoliday" class="holiday-info leave-info">({{ holidayInfo.holidayDesc }})</span>
+          <span v-if="hasLeaveInfo && !holidayInfo.isHoliday && leaveDesc" class="leave-info">({{ leaveDesc }})</span>
+          <span v-if="holidayInfo.isHoliday && holidayInfo.holidayDesc" class="holiday-info leave-info">({{ holidayInfo.holidayDesc }})</span>
         </div>
       </div>
 
