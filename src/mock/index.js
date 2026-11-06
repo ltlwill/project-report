@@ -46,6 +46,8 @@ export async function matchMock(url, options = {}) {
   if (!USE_MOCK) return null
 
   const { method = 'GET', params = {}, data = {} } = options
+  // 调用方可能把查询串拼在 url 里，匹配时只取路径部分
+  const path = url.split('?')[0]
   await delay(200 + Math.random() * 300)
 
   // ========== 登录 ==========
@@ -66,6 +68,19 @@ export async function matchMock(url, options = {}) {
     })
   }
 
+  // ========== 真实登录接口（页面实际调用的路径） ==========
+  if (url === '/h5-open-api/erp/h5/login' && method === 'POST') {
+    const { empId: loginEmpId, password } = data
+    if (!loginEmpId || !password) return error('工号和密码不能为空')
+    if (password.length < 4) return error('工号或密码错误', 401)
+    return success({ ...mockUser, empId: loginEmpId, empName: `用户${loginEmpId}` })
+  }
+
+  // ========== 当前用户信息（真实路径） ==========
+  if (url === '/h5-open-api/erp/h5/get-user-info' && method === 'GET') {
+    return success({ ...mockUser })
+  }
+
   // ========== 修改密码 ==========
   if (url === '/auth/change-password' && method === 'POST') {
     const { oldPassword, newPassword } = data
@@ -81,6 +96,46 @@ export async function matchMock(url, options = {}) {
       projectCount: mockProjects.length,
       weekHours: 32.5,
       monthHours: 128.0
+    })
+  }
+
+  // ========== 工时日历 ==========
+  if (url === '/h5-open-api/erp/h5/get-work-hours-calendar' && method === 'GET') {
+    const now = new Date()
+    const month = params.month || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+    const [y, m] = month.split('-').map(Number)
+    const daysInMonth = new Date(y, m, 0).getDate()
+    const requiredDays = []
+    const filledDays = []
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+      requiredDays.push(dateStr)
+      // 模拟：每 4 天漏一次填报，仅今天及以前算已填
+      if (d % 4 !== 0 && d <= now.getDate()) filledDays.push(dateStr)
+    }
+    return success({ month, requiredDays, filledDays })
+  }
+
+  // ========== 首页统计（真实路径） ==========
+  if (path === '/h5-open-api/erp/h5/statistics' && method === 'GET') {
+    return success({
+      summaryData: { totalCount: mockProjects.length, weekHours: 32.5, monthHours: 128 },
+      weekData: { week1: 8, week2: 7.5, week3: 8, week4: 6, week5: 8.5 },
+      last6MonthData: [
+        { month: '2026-06', totalHours: 156 },
+        { month: '2026-07', totalHours: 168 },
+        { month: '2026-08', totalHours: 172 },
+        { month: '2026-09', totalHours: 160 },
+        { month: '2026-10', totalHours: 176 },
+        { month: '2026-11', totalHours: 128 }
+      ],
+      productTypeSummaryData: [
+        { productType: '器件-9XX', totalHours: 32 },
+        { productType: '器件-N9XX', totalHours: 24 },
+        { productType: '器件-科研', totalHours: 18 },
+        { productType: '器件-海外', totalHours: 12 },
+        { productType: '其他项目', totalHours: 8 }
+      ]
     })
   }
 

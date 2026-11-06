@@ -1,4 +1,4 @@
-import { ref, reactive, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/modules/user.js'
 import { get } from '@/utils/request.js'
@@ -32,6 +32,15 @@ export function useHome() {
   })
 
   const recentList = ref([])
+
+  // ===== 工时日历 =====
+  // 先按当前月初始化，接口未就绪时也能直接渲染整月日期
+  const calendarMonth = ref(formatMonth(new Date()))
+  const calendarRequired = ref([])
+  const calendarFilled = ref([])
+  const calendarLoading = ref(false)
+  const calendarError = ref(false)
+  const showCalendarHelp = ref(false)
 
   const shortcuts = [
     { name: '填报', icon: 'edit', path: '/timesheet', color: '#1989fa' },
@@ -266,8 +275,107 @@ export function useHome() {
     }
   }
 
+  // ===== 工时日历 =====
+  const weekLabels = ['一', '二', '三', '四', '五', '六', '日']
+
+  function formatMonth(date) {
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    return `${y}-${m}`
+  }
+
+  const calendarMonthLabel = computed(() => {
+    if (!calendarMonth.value) return ''
+    const [y, m] = calendarMonth.value.split('-')
+    return `${y}年${parseInt(m, 10)}月`
+  })
+
+  // 连续切月时旧请求可能后返回，用序号丢弃过期响应，避免覆盖当前月数据
+  let calendarReqId = 0
+
+  async function loadWorkCalendar() {
+    if (!calendarMonth.value) return
+    const reqId = ++calendarReqId
+    const month = calendarMonth.value
+    calendarLoading.value = true
+    calendarError.value = false
+    try {
+      const res = await get('/h5-open-api/erp/h5/get-work-hours-calendar', {
+        empNo: userStore.empId || '',
+        month
+      }, { silent: true })
+      if (reqId !== calendarReqId) return
+      const data = res.data || {}
+      calendarRequired.value = Array.isArray(data.requiredDays) ? data.requiredDays : []
+      calendarFilled.value = Array.isArray(data.filledDays) ? data.filledDays : []
+    } catch (e) {
+      if (reqId !== calendarReqId) return
+      console.error('加载工时日历失败:', e)
+      calendarRequired.value = []
+      calendarFilled.value = []
+      calendarError.value = true
+    } finally {
+      if (reqId === calendarReqId) calendarLoading.value = false
+    }
+  }
+
+  function changeMonth(delta) {
+    const [y, m] = calendarMonth.value.split('-').map(Number)
+    calendarMonth.value = formatMonth(new Date(y, m - 1 + delta, 1))
+    loadWorkCalendar()
+  }
+
+  const isCurrentMonth = computed(() => calendarMonth.value === formatMonth(new Date()))
+
+  function goCurrentMonth() {
+    const target = formatMonth(new Date())
+    if (calendarMonth.value === target) return
+    calendarMonth.value = target
+    loadWorkCalendar()
+  }
+
+  // 生成当月日历格子（周一为一周起点）
+  const calendarDays = computed(() => {
+    if (!calendarMonth.value) return []
+    const [y, m] = calendarMonth.value.split('-').map(Number)
+    const firstWeekday = new Date(y, m - 1, 1).getDay()
+    const offset = (firstWeekday + 6) % 7
+    const daysInMonth = new Date(y, m, 0).getDate()
+    const requiredSet = new Set(calendarRequired.value)
+    const filledSet = new Set(calendarFilled.value)
+    const now = new Date()
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+
+    const cells = []
+    for (let i = 0; i < offset; i++) {
+      cells.push({ key: `empty-${i}`, day: null })
+    }
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+      const required = requiredSet.has(dateStr)
+      let status = 'none'
+      if (filledSet.has(dateStr)) {
+        // 非填报日却已填报属于错填，用警告色区分
+        status = required ? 'filled' : 'invalid'
+      } else if (required && dateStr > todayStr) {
+        status = 'future'
+      } else if (required) {
+        // 当天未填报也按未填报标红，今天另有圆环区分
+        status = 'missed'
+      }
+      cells.push({ key: dateStr, day, status, isToday: dateStr === todayStr })
+    }
+    return cells
+  })
+
+  // 状态类（已填/未填/无需填）仅在拿到接口数据后展示
+  const calendarHasStatus = computed(() => {
+    return !calendarError.value && (calendarRequired.value.length > 0 || calendarFilled.value.length > 0)
+  })
+
   onMounted(async () => {
     currentDate.value = formatDate()
+    loadWorkCalendar()
     await nextTick()
     initCharts()
     loadStatisticsData()
@@ -291,6 +399,15 @@ export function useHome() {
     goTo,
     getStatusType,
     getStatusText,
-    statisticsData
+    statisticsData,
+    weekLabels,
+    calendarMonthLabel,
+    calendarDays,
+    calendarHasStatus,
+    calendarLoading,
+    showCalendarHelp,
+    changeMonth,
+    isCurrentMonth,
+    goCurrentMonth
   }
 }

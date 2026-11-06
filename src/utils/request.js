@@ -45,7 +45,7 @@ function handleUnauthorized() {
  * @returns {Promise<object>} 响应数据
  */
 async function request(url, options = {}) {
-  const { method = 'GET', params, data, isLogin = false } = options
+  const { method = 'GET', params, data, isLogin = false, silent = false } = options
 
   // ========== Mock 拦截 ==========
   if (USE_MOCK) {
@@ -121,7 +121,7 @@ async function request(url, options = {}) {
     // 非成功状态抛出错误
     if (result.code !== undefined && result.code !== 0 && result.code !== 200) {
       // showFailToast(result.msg || '请求失败')
-      showTip(result.msg || '请求失败')
+      if (!silent) showTip(result.msg || '请求失败')
       throw new Error(result.msg || '请求失败')
     }
 
@@ -130,7 +130,7 @@ async function request(url, options = {}) {
     // 网络错误处理
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
       // showFailToast({message: '网络连接失败，请检查网络', zIndex: 999999})
-      showTip('网络连接失败，请检查网络')
+      if (!silent) showTip('网络连接失败，请检查网络')
       throw new Error('网络连接失败，请检查网络')
     }
     throw error
