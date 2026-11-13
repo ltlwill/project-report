@@ -87,12 +87,12 @@ export function useHome() {
   function initChart() {
     if (!chartRef.value) return
     chartInstance = echarts.init(chartRef.value)
-    const days = ['周一', '周二', '周三', '周四', '周五']
+    const days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
     // const hours = [8, 7.5, 8, 6, 8.5]
     let hours = []
     if(statisticsData.value?.weekData){
       const weekData = statisticsData.value?.weekData || {}
-      hours = [weekData.week1, weekData.week2, weekData.week3, weekData.week4, weekData.week5]
+      hours = [weekData.week1, weekData.week2, weekData.week3, weekData.week4, weekData.week5, weekData.week6, weekData.week7]
     }
 
     chartInstance.setOption({
