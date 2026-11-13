@@ -88,57 +88,60 @@ export function useTimesheet() {
     try {
       const url = `/h5-open-api/erp/h5/get-leave-info?empId=${empId.value}&date=${reportDate}`
       const res = await get(url)
-      if(isDL.value){
-        const atteWorkHours = attendanceWorkhoursData.value[reportDate]?.totalWorkHours || 0
-        workHours.value = atteWorkHours
-      }else{
-        if(res.data && res.data.length){
-          const validLeaveItems = res.data.filter((item) => !(item.type || '').includes('出差')) || []
-          hasLeaveInfo.value = true
-          const totalLeaveHours =validLeaveItems.reduce((acc, cur) => acc + cur.currLeaveHour, 0)
-          const totalValidWorkHour = 8 - totalLeaveHours
-          workHours.value = holidayInfo.value?.isHoliday ? 0 : totalValidWorkHour
-          currValidWorkHour.value = totalValidWorkHour
-          leaveDesc.value = validLeaveItems.map((item) => item.type + " " + item.currLeaveHour + "h").join(';')
-          leaveDetails.value = validLeaveItems.map((item) => ({ 
-            leaveType: item.type,
-            leaveHour: item.currLeaveHour,
-            leaveDate: item.date
-          }))
-        }else{
-          hasLeaveInfo.value = false
-          workHours.value = holidayInfo.value?.isHoliday ? 0 : 8
-          currValidWorkHour.value = 0
-          leaveDesc.value = ''
-          leaveDetails.value = []
-        }
-      }
 
-      // const attendanceMap = attendanceWorkhoursData.value || {}
-      // const atteData = attendanceMap[reportDate] || {}
-      // const finalWorkHours = getCurrentDateWorkHours(atteData)
-      // const workType = atteData.workType || ''
-      // let finalLeaveDesc = ''
-      // if (!isDL.value && finalWorkHours < 8) {
-      //   let leaveDesc = workType.replace(/\d+/ig, '')
-      //   if (!workType.includes('节日')) {
-      //     const leaveHours = atteData.leaveHours || 0
-      //     const absentHours = atteData.absentHours || 0
-      //     const descArr = []
-      //     if (leaveHours > 0 && leaveDesc) {
-      //       descArr.push(leaveDesc + leaveHours + 'h')
-      //     }
-      //     if (absentHours > 0 && leaveDesc) {
-      //       descArr.push(leaveDesc + absentHours + 'h')
-      //     }
-      //     finalLeaveDesc = descArr.length ? descArr.join(';') : ''
+      /**** 不按考勤逻辑  ****/
+      // if(isDL.value){
+      //   const atteWorkHours = attendanceWorkhoursData.value[reportDate]?.totalWorkHours || 0
+      //   workHours.value = atteWorkHours
+      // }else{
+      //   if(res.data && res.data.length){
+      //     const validLeaveItems = res.data.filter((item) => !(item.type || '').includes('出差')) || []
       //     hasLeaveInfo.value = true
-      //   } else if (workType.includes('节日')) {
-      //     finalLeaveDesc = leaveDesc.replace(/节日/ig, '')
+      //     const totalLeaveHours =validLeaveItems.reduce((acc, cur) => acc + cur.currLeaveHour, 0)
+      //     const totalValidWorkHour = 8 - totalLeaveHours
+      //     workHours.value = holidayInfo.value?.isHoliday ? 0 : totalValidWorkHour
+      //     currValidWorkHour.value = totalValidWorkHour
+      //     leaveDesc.value = validLeaveItems.map((item) => item.type + " " + item.currLeaveHour + "h").join(';')
+      //     leaveDetails.value = validLeaveItems.map((item) => ({ 
+      //       leaveType: item.type,
+      //       leaveHour: item.currLeaveHour,
+      //       leaveDate: item.date
+      //     }))
+      //   }else{
+      //     hasLeaveInfo.value = false
+      //     workHours.value = holidayInfo.value?.isHoliday ? 0 : 8
+      //     currValidWorkHour.value = 0
+      //     leaveDesc.value = ''
+      //     leaveDetails.value = []
       //   }
       // }
-      // workHours.value = finalWorkHours
-      // leaveDesc.value = finalLeaveDesc
+
+      // /***按考勤逻辑 ***/
+      const attendanceMap = attendanceWorkhoursData.value || {}
+      const atteData = attendanceMap[reportDate] || {}
+      const finalWorkHours = getCurrentDateWorkHours(atteData)
+      const workType = atteData.workType || ''
+      let finalLeaveDesc = ''
+      if (!isDL.value && finalWorkHours < 8) {
+        let leaveDesc = workType.replace(/\d+$/ig, '')
+        if (!workType.includes('节日')) {
+          const leaveHours = atteData.leaveHours || 0
+          const absentHours = atteData.absentHours || 0
+          const descArr = []
+          if (leaveHours > 0 && leaveDesc) {
+            descArr.push(leaveDesc + leaveHours + 'h')
+          }
+          if (absentHours > 0 && leaveDesc) {
+            descArr.push(leaveDesc + absentHours + 'h')
+          }
+          finalLeaveDesc = descArr.length ? descArr.join(';') : ''
+          hasLeaveInfo.value = true
+        } else if (workType.includes('节日')) {
+          finalLeaveDesc = leaveDesc.replace(/节日/ig, '')
+        }
+      }
+      workHours.value = finalWorkHours
+      leaveDesc.value = finalLeaveDesc
     } catch (e) {
       console.error('加载请假信息失败失败:', e)
     } finally {
@@ -253,45 +256,47 @@ export function useTimesheet() {
     const isWeekendDay = weekEndDayIndex.includes(dayIndex) // 周末
     const isWorkDay = !weekEndDayIndex.includes(dayIndex) // 工作日
     const attendanceData = attendanceWorkhoursData.value || {}
-
-    const atteWorkHours = (attendanceData[dateString] || {})?.totalWorkHours || 0
     let isHoliday = false
     let holidayDesc = ''
-    if (current.isAfter(now)) {
-      isHoliday = true
-      holidayDesc = '未入职'
-      isHoliday = true
-    } else if ((isWorkDay && isContainsInHolidayScheduleDays(dateStr) && !isDL.value) || (isWorkDay && isContainsInHolidayScheduleDays(dateStr) && isDL.value && atteWorkHours <= 0)) {
-      isHoliday = true
-      holidayDesc = '节假日'
-    } else if ((isWeekendDay && isContainsInHolidayScheduleDays(dateStr) && !isDL.value) || (isWeekendDay && isContainsInHolidayScheduleDays(dateStr) && isDL.value && atteWorkHours > 0)) {
-      isHoliday = false
-      holidayDesc = isDL.value ? '班' : '补班'
-    } else if (isWeekendDay && isDL.value && atteWorkHours > 0) {
-      isHoliday = false
-      holidayDesc = '班'
-    } else if(isDL.value && atteWorkHours > 0){
-      isHoliday = false
-      holidayDesc = '班'
-    }else {
-      isHoliday = isDL.value ? true : isWeekendDay
-      holidayDesc = isDL.value ? currentEmpAttendanceDataIsNotExists.value ? '无考勤' : '休' : '周末'
-    }
 
-    // const atteWorkHours = getCurrentDateWorkHours(attendanceData[dateString] || {})
-    // const workType = attendanceData[dateString]?.workType || ''
-    // const desc = currentEmpAttendanceDataIsNotExists.value ? '无考勤' : (workType.replace(/\d+/ig, '').replace(/节日/ig, ''))
+    /***不按考勤逻辑 ***/
+    // const atteWorkHours = (attendanceData[dateString] || {})?.totalWorkHours || 0
     // if (current.isAfter(now)) {
     //   isHoliday = true
     //   holidayDesc = '未入职'
     //   isHoliday = true
-    // } else if(atteWorkHours <= 0){
+    // } else if ((isWorkDay && isContainsInHolidayScheduleDays(dateStr) && !isDL.value) || (isWorkDay && isContainsInHolidayScheduleDays(dateStr) && isDL.value && atteWorkHours <= 0)) {
     //   isHoliday = true
-    //   holidayDesc = leaveDesc.value || desc
-    // } else {
-    //   isHoliday = atteWorkHours <= 0
-    //   holidayDesc = leaveDesc.value || desc
+    //   holidayDesc = '节假日'
+    // } else if ((isWeekendDay && isContainsInHolidayScheduleDays(dateStr) && !isDL.value) || (isWeekendDay && isContainsInHolidayScheduleDays(dateStr) && isDL.value && atteWorkHours > 0)) {
+    //   isHoliday = false
+    //   holidayDesc = isDL.value ? '班' : '补班'
+    // } else if (isWeekendDay && isDL.value && atteWorkHours > 0) {
+    //   isHoliday = false
+    //   holidayDesc = '班'
+    // } else if(isDL.value && atteWorkHours > 0){
+    //   isHoliday = false
+    //   holidayDesc = '班'
+    // }else {
+    //   isHoliday = isDL.value ? true : isWeekendDay
+    //   holidayDesc = isDL.value ? currentEmpAttendanceDataIsNotExists.value ? '无考勤' : '休' : '周末'
     // }
+
+    /*** 按考勤逻辑  */
+    const atteWorkHours = getCurrentDateWorkHours(attendanceData[dateString] || {})
+    const workType = attendanceData[dateString]?.workType || ''
+    const desc = currentEmpAttendanceDataIsNotExists.value ? '无考勤' : (workType.replace(/\d+$/ig, '').replace(/节日/ig, ''))
+    if (current.isAfter(now)) {
+      isHoliday = true
+      holidayDesc = '未入职'
+      isHoliday = true
+    } else if(atteWorkHours <= 0){
+      isHoliday = true
+      holidayDesc = leaveDesc.value || desc
+    } else {
+      isHoliday = atteWorkHours <= 0
+      holidayDesc = leaveDesc.value || desc
+    }
 
     holidayInfo.value = { isHoliday, holidayDesc, isWorkDay, isWeekendDay }
     if(isHoliday){
