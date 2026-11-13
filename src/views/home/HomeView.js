@@ -106,7 +106,7 @@ export function useHome() {
       yAxis: {
         type: 'value',
         min: 0,
-        max: 10,
+        max: 24,
         axisLine: { show: false },
         splitLine: { lineStyle: { color: '#f0f0f0' } },
         axisLabel: { color: '#999', fontSize: 11 }
