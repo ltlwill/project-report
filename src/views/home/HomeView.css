@@ -340,6 +340,15 @@
   background: #ee0a24;
 }
 
+.is-clickable {
+  cursor: pointer;
+}
+
+.is-clickable:active {
+  background: #f7f8fa;
+  border-radius: 6px;
+}
+
 .is-future .calendar-day {
   color: #c8c9cc;
 }

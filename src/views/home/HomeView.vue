@@ -51,7 +51,8 @@
           v-for="cell in calendarDays"
           :key="cell.key"
           class="calendar-cell"
-          :class="cell.day ? [calendarHasStatus ? `is-${cell.status}` : '', { 'is-today': cell.isToday }] : 'is-empty'"
+          :class="cell.day ? [calendarHasStatus ? `is-${cell.status}` : '', { 'is-today': cell.isToday, 'is-clickable': cell.status === 'missed' }] : 'is-empty'"
+          @click="onCalendarCellClick(cell)"
         >
           <template v-if="cell.day">
             <span class="calendar-day">{{ cell.day }}</span>

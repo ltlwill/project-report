@@ -1,4 +1,4 @@
-import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, onActivated, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/modules/user.js'
 import { get } from '@/utils/request.js'
@@ -334,6 +334,12 @@ export function useHome() {
     loadWorkCalendar()
   }
 
+  // 仅未填报（红点）支持点击跳转填报，并带上该日期
+  function onCalendarCellClick(cell) {
+    if (!cell.day || cell.status !== 'missed') return
+    router.push({ path: '/timesheet', query: { date: cell.date } })
+  }
+
   // 生成当月日历格子（周一为一周起点）
   const calendarDays = computed(() => {
     if (!calendarMonth.value) return []
@@ -363,7 +369,7 @@ export function useHome() {
         // 当天未填报也按未填报标红，今天另有圆环区分
         status = 'missed'
       }
-      cells.push({ key: dateStr, day, status, isToday: dateStr === todayStr })
+      cells.push({ key: dateStr, date: dateStr, day, status, isToday: dateStr === todayStr })
     }
     return cells
   })
@@ -379,6 +385,17 @@ export function useHome() {
     await nextTick()
     initCharts()
     loadStatisticsData()
+  })
+
+  // 首页是 keep-alive 页面，从填报页回来时刷新当前月，避免看不到最新填报状态
+  let isFirstActivation = true
+
+  onActivated(() => {
+    if (isFirstActivation) {
+      isFirstActivation = false
+      return
+    }
+    loadWorkCalendar()
   })
 
   onBeforeUnmount(() => {
@@ -408,6 +425,7 @@ export function useHome() {
     showCalendarHelp,
     changeMonth,
     isCurrentMonth,
-    goCurrentMonth
+    goCurrentMonth,
+    onCalendarCellClick
   }
 }
