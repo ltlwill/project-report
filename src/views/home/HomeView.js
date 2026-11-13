@@ -94,6 +94,7 @@ export function useHome() {
       const weekData = statisticsData.value?.weekData || {}
       hours = [weekData.week1, weekData.week2, weekData.week3, weekData.week4, weekData.week5, weekData.week6, weekData.week7]
     }
+    const maxHour = Math.max(...hours)
 
     chartInstance.setOption({
       tooltip: { trigger: 'axis' },
@@ -106,7 +107,7 @@ export function useHome() {
       yAxis: {
         type: 'value',
         min: 0,
-        max: 24,
+        max: maxHour || 10,
         axisLine: { show: false },
         splitLine: { lineStyle: { color: '#f0f0f0' } },
         axisLabel: { color: '#999', fontSize: 11 }
