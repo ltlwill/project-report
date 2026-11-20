@@ -39,7 +39,7 @@
           </div>
           <div class="summary-item">
             <span class="summary-label">总工时</span>
-            <span class="summary-value">{{ totalHours.toFixed(1) }}h</span>
+            <span class="summary-value">{{ totalHours.toFixed(2) }}h</span>
           </div>
         </div>
 

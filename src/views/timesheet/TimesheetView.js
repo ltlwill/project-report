@@ -79,6 +79,8 @@ export function useTimesheet() {
   async function onDateConfirm({ selectedValues }) {
     reportDate.value = selectedValues.join('-')
     showDatePicker.value = false
+    hasLeaveInfo.value = false
+    holidayInfo.value = {isHoliday: false, holidayDesc: '', isWorkDay: true, isWeekendDay: false}
     await loadEmpAttendanceData(reportDate.value)
     await loadCurrentDateLeaveInfo(reportDate.value)
     loadLoaderReportData(reportDate.value)
@@ -103,10 +105,15 @@ export function useTimesheet() {
       const res = await get(url)
 
       /**** 不按考勤逻辑  ****/
-      if(isDL.value){
+      if(isDL.value || currentDateIsInHourlyTimeline(reportDate)){
         const atteWorkHours = attendanceWorkhoursData.value[reportDate]?.totalWorkHours || 0
         workHours.value = atteWorkHours
+        hasLeaveInfo.value = false
+        leaveDesc.value = ''
+        leaveDetails.value = []
       }else{
+        currentEmpAttendanceDataIsNotExists.value
+        
         if(res.data && res.data.length){
           const validLeaveItems = res.data.filter((item) => !(item.type || '').includes('出差')) || []
           hasLeaveInfo.value = true
@@ -122,7 +129,13 @@ export function useTimesheet() {
           }))
         }else{
           hasLeaveInfo.value = false
-          workHours.value = holidayInfo.value?.isHoliday ? 0 : 8
+          let finalWorkHours = 0
+          if(!currentEmpAttendanceDataIsNotExists.value){
+            finalWorkHours = attendanceWorkhoursData.value[reportDate]?.workHours || 0
+          }else{
+            finalWorkHours = 8 
+          }
+          workHours.value = holidayInfo.value?.isHoliday ? 0 : finalWorkHours
           currValidWorkHour.value = 0
           leaveDesc.value = ''
           leaveDetails.value = []
@@ -132,7 +145,7 @@ export function useTimesheet() {
       // /***按考勤逻辑 ***/
       // const attendanceMap = attendanceWorkhoursData.value || {}
       // const atteData = attendanceMap[reportDate] || {}
-      // const finalWorkHours = getCurrentDateWorkHours(atteData)
+      // const finalWorkHours = getCurrentDateWorkHours(atteData,reportDate)
       // const workType = atteData.workType || ''
       // let finalLeaveDesc = ''
       // if (!isDL.value && finalWorkHours < 8) {
@@ -161,11 +174,34 @@ export function useTimesheet() {
     }
   } 
 
-  function getCurrentDateWorkHours(atteData){
-    let finalWorkHours = isDL.value ? atteData?.totalWorkHours || 0 : atteData?.workHours || 0
+  function currentDateIsInNotRdTimeline (currentDate){
+    const rdTypeRecords = currentEmpPositionInfo.value?.rdTypeList || []
+    const date = dayjs(currentDate)
+    return rdTypeRecords.some(record => {
+      const rdType = record.rdType
+      const startDate = dayjs(record.startDate)
+      const endDate = dayjs(record.endDate)
+      return '非研发' === rdType && (date.isSame(startDate) || date.isAfter(startDate)) && (date.isSame(endDate) || date.isBefore(endDate))
+    })
+}
+
+function currentDateIsInHourlyTimeline (currentDate){
+  const salTypeRecords = currentEmpPositionInfo.value?.salaryTypeList || []
+  const date = dayjs(currentDate)
+  return salTypeRecords.some(record => {
+    const salaryType = record.salaryType
+    const startDate = dayjs(record.startDate)
+    const endDate = dayjs(record.endDate)
+    return '时薪' === salaryType && (date.isSame(startDate) || date.isAfter(startDate)) && (date.isSame(endDate) || date.isBefore(endDate))
+  })
+}
+
+  function getCurrentDateWorkHours(atteData,currentDate){
+    let finalWorkHours = currentDateIsInHourlyTimeline(currentDate) || isDL.value ? atteData?.totalWorkHours || 0 : atteData?.workHours || 0
     const workType = atteData?.workType || ''
-    if (!isDL.value && finalWorkHours > 0 && workType.includes('节日')) {
-      finalWorkHours = 0
+    // if (!isDL.value && finalWorkHours > 0 && workType.includes('节日')) {
+    if (finalWorkHours > 0 && workType.includes('节日')) {
+        finalWorkHours = 0
     }
     return finalWorkHours
   }
@@ -277,17 +313,22 @@ export function useTimesheet() {
     if (current.isAfter(now)) {
       isHoliday = true
       holidayDesc = '未入职'
+    } else if(currentDateIsInNotRdTimeline(current)){
       isHoliday = true
-    } else if ((isWorkDay && isContainsInHolidayScheduleDays(dateStr) && !isDL.value) || (isWorkDay && isContainsInHolidayScheduleDays(dateStr) && isDL.value && atteWorkHours <= 0)) {
+      holidayDesc = '非研发'
+    } else if ((isWorkDay && isContainsInHolidayScheduleDays(dateStr) && !isDL.value && atteWorkHours <= 0) || (isWorkDay && isContainsInHolidayScheduleDays(dateStr) && isDL.value && atteWorkHours <= 0)) {
       isHoliday = true
       holidayDesc = '节假日'
-    } else if ((isWeekendDay && isContainsInHolidayScheduleDays(dateStr) && !isDL.value) || (isWeekendDay && isContainsInHolidayScheduleDays(dateStr) && isDL.value && atteWorkHours > 0)) {
+    } else if ((isWeekendDay && isContainsInHolidayScheduleDays(dateStr) && !isDL.value && atteWorkHours > 0) || (isWeekendDay && isContainsInHolidayScheduleDays(dateStr) && isDL.value && atteWorkHours > 0)) {
       isHoliday = false
       holidayDesc = isDL.value ? '班' : '补班'
     } else if (isWeekendDay && isDL.value && atteWorkHours > 0) {
       isHoliday = false
       holidayDesc = '班'
-    } else if(isDL.value && atteWorkHours > 0){
+    } else if (isWeekendDay && !isDL.value && atteWorkHours > 0) {
+      isHoliday = false
+      holidayDesc = ''
+    }else if(isDL.value && atteWorkHours > 0){
       isHoliday = false
       holidayDesc = '班'
     }else {
@@ -296,7 +337,7 @@ export function useTimesheet() {
     }
 
     /*** 按考勤逻辑  */
-    // const atteWorkHours = getCurrentDateWorkHours(attendanceData[dateString] || {})
+    // const atteWorkHours = getCurrentDateWorkHours(attendanceData[dateString] || {},dateString)
     // const workType = attendanceData[dateString]?.workType || ''
     // const desc = currentEmpAttendanceDataIsNotExists.value ? '无考勤' : (workType.replace(/\d+$/ig, '').replace(/节日/ig, ''))
     // if (current.isAfter(now)) {
@@ -420,7 +461,7 @@ export function useTimesheet() {
     const formattedDate = formatDateWithWeekDay(new Date(arr[0], arr[1] - 1, arr[2]))
     let message = `确认提交 <span style="font-weight: bold;color: #ee0a24;">${formattedDate}</span> 的工时填报？\n` 
     message += `共 <span style="font-weight: bold;color: #ee0a24;">${projectCount.value}</span> 个项目，`
-    message += `总工时 <span style="font-weight: bold;color: #ee0a24;">${totalHours.value.toFixed(1)}h</span>`
+    message += `总工时 <span style="font-weight: bold;color: #ee0a24;">${totalHours.value.toFixed(2)}h</span>`
     try {
       await showConfirmDialog({
         title: '确认提交',

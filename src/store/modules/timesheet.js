@@ -12,7 +12,8 @@ export const useTimesheetStore = defineStore('timesheet', () => {
   // 计算属性
   const projectCount = computed(() => projectList.value.length)
   const totalHours = computed(() => {
-    return projectList.value.reduce((sum, item) => sum + (Number(item.hours) || 0), 0)
+    const sum = projectList.value.reduce((sum, item) => sum + (Number(item.hours) || 0) * 100, 0)
+    return sum / 100
   })
 
   /** 添加项目到列表 */
