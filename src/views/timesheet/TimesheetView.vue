@@ -41,6 +41,18 @@
             <span class="summary-label">总工时</span>
             <span class="summary-value">{{ totalHours.toFixed(2) }}h</span>
           </div>
+          <!-- <div class="summary-item">
+            <van-button
+              size="small"
+              type="primary"
+              plain
+              icon="plus"
+              :disabled="workHours <= 0  || holidayInfo.isHoliday"
+              @click="showProjectSelector = true"
+            >
+              一键分配
+            </van-button>
+          </div> -->
         </div>
 
         <van-notice-bar
@@ -62,7 +74,17 @@
               :disabled="workHours <= 0  || holidayInfo.isHoliday"
               @click="showProjectSelector = true"
             >
-              选择项目
+              添加项目
+            </van-button>
+            <van-button
+              size="small"
+              type="success"
+              plain
+              icon="clock-o"
+              :disabled="workHours <= 0  || holidayInfo.isHoliday || projectList.length <= 0"
+              @click="autoAssignWorkHour()"
+            >
+              一键工时分配
             </van-button>
           </div>
 

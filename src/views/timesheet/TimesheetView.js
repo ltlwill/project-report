@@ -519,6 +519,59 @@ function currentDateIsInHourlyTimeline (currentDate){
     }
   }
 
+  function autoAssignWorkHour() {
+    const count = projectList.value.length
+    if(count <= 0) return
+    let arr = []
+    try{
+      arr = randomAssignWorkHour(count, workHours.value)
+    }catch(e){
+      showTip('分配工时失败:' + (e.message || ''))
+    }
+    if(!arr || !arr.length) return
+    for (let i = 0; i < count; i++) {
+      projectList.value[i]['hours'] = arr[i]
+    }
+  }
+
+  function randomAssignWorkHour(projectCount, totalHour){
+    if (projectCount < 1) {
+      throw new Error("项目数不能小于1")
+    }
+    if (totalHour <= 0) {
+      throw new Error("总工时必须大于0")
+    }
+
+    const minUnitPerItem = 1
+    const unitStep = 0.5
+    const totalUnit = Math.floor(totalHour / unitStep)
+    const remainder = totalHour - totalUnit * unitStep
+
+    const maxProjectCount = totalUnit / minUnitPerItem
+    if (projectCount > maxProjectCount) {
+      throw new Error(`总工时${totalHour}h，扣除不足0.5的零头后，最多支持${maxProjectCount}个项目，每个至少0.5h`)
+    }
+
+    const units = new Array(projectCount).fill(minUnitPerItem)
+    let remainUnit = totalUnit - projectCount * minUnitPerItem
+
+    while (remainUnit > 0) {
+      const idx = Math.floor(Math.random() * projectCount)
+      units[idx] += 1
+      remainUnit -= 1
+    }
+
+    const hourList = units.map(u => u * unitStep)
+
+    if (remainder > 0) {
+      const randomIdx = Math.floor(Math.random() * projectCount)
+      hourList[randomIdx] += remainder
+    }
+
+    return hourList.map(val => Number(val.toFixed(2)))
+  }
+
+
   // 首页红点日期只消费一次；首次挂载由 onMounted 处理，避免重复请求
   let isFirstActivation = true
 
@@ -552,6 +605,6 @@ function currentDateIsInHourlyTimeline (currentDate){
     showProjectSelector, projectList, projectCount, totalHours,
     submitting, onDateConfirm, onPositionConfirm,
     onRemoveProject, onHoursChange, onCompletedChange, onSubmit, 
-    unSubmitDates, unSubmitDatesMessage
+    unSubmitDates, unSubmitDatesMessage,autoAssignWorkHour
   }
 }
