@@ -542,29 +542,57 @@ function currentDateIsInHourlyTimeline (currentDate){
       throw new Error("总工时必须大于0")
     }
 
-    const minUnitPerItem = 1
     const unitStep = 0.5
+    // 总共有多少个0.5单元
     const totalUnit = Math.floor(totalHour / unitStep)
     const remainder = totalHour - totalUnit * unitStep
 
-    const maxProjectCount = totalUnit / minUnitPerItem
-    if (projectCount > maxProjectCount) {
-      throw new Error(`总工时${totalHour}h，扣除不足0.5的零头后，最多支持${maxProjectCount}个项目，每个至少0.5h`)
+    // 最多能支撑多少个项目拿到保底0.5
+    const maxAvailableProject = totalUnit
+    // 初始化全部为0
+    const hourList = new Array(projectCount).fill(0)
+
+    if (maxAvailableProject <= 0) {
+      // 总工时不足0.5，全部单元数为0，只有零头，随机给一个项目
+      if (remainder > 0) {
+        const randomIdx = Math.floor(Math.random() * projectCount)
+        hourList[randomIdx] = remainder
+      }
+      return hourList.map(val => Number(val.toFixed(2)))
     }
 
-    const units = new Array(projectCount).fill(minUnitPerItem)
-    let remainUnit = totalUnit - projectCount * minUnitPerItem
+    // 随机挑选 maxAvailableProject 个不同下标，用来分配保底0.5
+    const allIndex = Array.from({ length: projectCount }, (_, i) => i)
+    // 洗牌取前N个
+    for (let i = allIndex.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+        ;[allIndex[i], allIndex[j]] = [allIndex[j], allIndex[i]]
+    }
+    const selectedIndexes = allIndex.slice(0, maxAvailableProject)
 
+    // 先给选中的项目每个分配 0.5（1unit）
+    const unitsMap = {}
+    selectedIndexes.forEach(idx => {
+      unitsMap[idx] = 1
+    })
+    let remainUnit = totalUnit - selectedIndexes.length
+
+    // 多余的unit继续随机分给已经选中的项目
     while (remainUnit > 0) {
-      const idx = Math.floor(Math.random() * projectCount)
-      units[idx] += 1
+      const randomPick = selectedIndexes[Math.floor(Math.random() * selectedIndexes.length)]
+      unitsMap[randomPick] += 1
       remainUnit -= 1
     }
 
-    const hourList = units.map(u => u * unitStep)
+    // 回填到工时数组
+    Object.keys(unitsMap).forEach(key => {
+      const idx = Number(key)
+      hourList[idx] = unitsMap[idx] * unitStep
+    })
 
-    if (remainder > 0) {
-      const randomIdx = Math.floor(Math.random() * projectCount)
+    // 零头随机加到其中一个已分配的项目
+    if (remainder > 0 && selectedIndexes.length > 0) {
+      const randomIdx = selectedIndexes[Math.floor(Math.random() * selectedIndexes.length)]
       hourList[randomIdx] += remainder
     }
 
