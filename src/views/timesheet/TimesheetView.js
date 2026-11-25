@@ -111,9 +111,7 @@ export function useTimesheet() {
         hasLeaveInfo.value = false
         leaveDesc.value = ''
         leaveDetails.value = []
-      }else{
-        currentEmpAttendanceDataIsNotExists.value
-        
+      }else{        
         if(res.data && res.data.length){
           const validLeaveItems = res.data.filter((item) => !(item.type || '').includes('出差')) || []
           hasLeaveInfo.value = true
@@ -130,14 +128,20 @@ export function useTimesheet() {
         }else{
           hasLeaveInfo.value = false
           let finalWorkHours = 0
+          let desc = ''
           if(!currentEmpAttendanceDataIsNotExists.value){
             finalWorkHours = attendanceWorkhoursData.value[reportDate]?.workHours || 0
+            if(finalWorkHours <= 0){
+              const workType = attendanceWorkhoursData.value[reportDate]?.workType || ''
+              desc = (workType.replace(/\d+$/ig, '').replace(/节日/ig, ''))
+              hasLeaveInfo.value = true
+            }
           }else{
             finalWorkHours = 8 
           }
           workHours.value = holidayInfo.value?.isHoliday ? 0 : finalWorkHours
           currValidWorkHour.value = 0
-          leaveDesc.value = ''
+          leaveDesc.value = desc
           leaveDetails.value = []
         }
       }
