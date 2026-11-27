@@ -301,7 +301,8 @@ export function useHome() {
     calendarLoading.value = true
     calendarError.value = false
     try {
-      const res = await get('/h5-open-api/erp/h5/get-work-hours-calendar', {
+      const url = '/h5-open-api/erp/h5/get-work-hours-calendar'
+      const res = await get(url, {
         empNo: userStore.empId || '',
         month
       }, { silent: true })
